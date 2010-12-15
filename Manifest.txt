@@ -1,0 +1,8 @@
+.autotest
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+bin/chub
+lib/chub.rb
+test/test_chub.rb
