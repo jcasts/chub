@@ -4,24 +4,77 @@
 
 == DESCRIPTION:
 
-Chub is both a client and server configuration hub for applications that
-need to share configuration items with each other.
+Chub is both a client and server configuration hub for application
+config distribution.
 
 == FEATURES/PROBLEMS:
 
-* FIX (list of features or problems)
+== SERVER SETUP:
+
+== CLIENT SETUP:
+
+* Create a remote git config repo for each app/project
+  through a simple client command.
+
+* Push config to server.
+
+* You're done!
 
 == SYNOPSIS:
 
-  FIX (code sample of usage)
+Return a list of configs for an app:
+
+  $ chub app
+
+Create a config:
+
+  $ chub app/dev -n
+
+Read a config:
+
+  $ chub app/dev
+
+Read a config value:
+
+  $ chub app/dev:path/to/key
+
+Update or create a config value:
+
+  $ chub app/dev:path/to/key=value
+
+Delete a config value:
+
+  $ chub app/dev:path/to/key -d
+
+View inheritance info in config:
+
+  $ chub app/dev -i
+
+Add a config inheritance:
+
+  $ chub app/dev -i other_app/dev
+
+Delete a config inheritance:
+
+  $ chub app/dev -d -i other_app/dev
+
+Read a config without inherited configs merged in:
+
+  $ chub app/dev -I
+
+Update/upload a config from a yaml file or io:
+
+  $ chub app/dev -y -f conf.yml
+
+  $ cat conf.yml | chub app/dev -y
 
 == REQUIREMENTS:
 
-* FIX (list of requirements)
+* TBA
 
 == INSTALL:
 
-* FIX (sudo gem install, anything else)
+* sudo gem install chub
 
 == DEVELOPERS:
 
@@ -36,7 +89,7 @@ and generate the RDoc.
 
 (The MIT License)
 
-Copyright (c) 2010 FIX
+Copyright (c) 2010 Jeremie Castagna
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
