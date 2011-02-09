@@ -20,7 +20,7 @@ class Chub
     before_create :assign_rev
     before_update :set_time_and_user
 
-    validates_presence_of :name, :updated_by, :updated_at
+    validates_presence_of :name, :rev, :updated_by, :updated_at
 
 
     ##
