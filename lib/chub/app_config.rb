@@ -10,24 +10,27 @@ class Chub
     field :rev,  :uniq => true
     field :prev_rev
 
-    #references_one  :previous, :class_name => "Chub::AppConfig" #self.name
-    #references_many :includes, :class_name => self.name
-
     field :updated_by, :default => Chub.config['user']
-    field :updated_at, :default => Time.now, :type => Time
+    field :updated_at, :default => Time.now,  :type => Time
+    field :includes,   :default => Array.new, :type => Array
+    field :active,     :default => true,      :type => Boolean
 
     before_create :assign_previous
-    before_create :assign_rev
+    before_validation :assign_rev
     before_update :set_time_and_user
 
     validates_presence_of :name, :rev, :updated_by, :updated_at
+
+    scope :active, :where => { :active => true }
+
+    attr_accessible :name, :data, :updated_by, :includes
 
 
     ##
     # Return the specified app_config document with recursively added includes.
 
     def self.read name
-      app_config = latest(name)
+      app_config = current(name)
       app_config && app_config.document
     end
 
@@ -41,10 +44,19 @@ class Chub
 
 
     ##
-    # Create a new revision of the document.
+    # Returns the currently active AppConfig with the given name.
+
+    def self.current name
+      self.active.where(:name => name).first
+    end
+
+
+    ##
+    # Create a new revision of the document
+    # based on the currently active AppConfig.
 
     def self.create_rev name, new_data={}
-      app_config = latest(name)
+      app_config = current(name)
 
       if app_config
         app_config.create_rev new_data
@@ -55,16 +67,20 @@ class Chub
 
 
     ##
-    # Creates and saves a new revision as a child of the current one.
+    # Creates and saves a new revision as a child of this instance.
 
     def create_rev new_data={}
       new_data   = self.data.merge(new_data)
       app_config = self.class.new :name     => self.name,
-                                  :data     => new_data
-                                  #:includes => self.includes
+                                  :data     => new_data,
+                                  :includes => self.includes
 
       app_config.previous = self
-      app_config.save
+      app_config.save!
+
+      self.active = false
+      self.save!
+
       app_config
     end
 
@@ -78,6 +94,23 @@ class Chub
 
 
     ##
+    # Add an app_config as included in this one
+    # and puts it at the top of the stack.
+
+    def include app_config
+      self.includes.unshift app_config.name
+    end
+
+
+    ##
+    # Check if an app_config is already included.
+
+    def include? app_config
+      self.includes.include? app_config.name
+    end
+
+
+    ##
     # Returns the fully merged config document with recursively added includes.
 
     def document
@@ -85,7 +118,9 @@ class Chub
 
       doc = self.data.dup || Hash.new
 
-      self.includes.each do |incl|
+      doc_includes = self.class.active.any_in :name => self.includes
+
+      doc_includes.each do |incl|
         doc = incl.document.merge doc
       end
 

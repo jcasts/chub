@@ -52,9 +52,10 @@ end
 module Test
   def self.setup
     Chub::AppConfig.destroy_all
-    Chub::AppConfig.create_rev "app/default", "def1" => "defval1"
+    de = Chub::AppConfig.create_rev "app/default", "def1" => "defval1"
     ac = Chub::AppConfig.create_rev "app/dev", "key1" => "val1"
     ac = ac.create_rev "key2" => "val2"
+    ac.include de
     ac = ac.create_rev "key3" => "val3"
   end
 end
