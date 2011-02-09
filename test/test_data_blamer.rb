@@ -1,3 +1,5 @@
+require 'test_helper'
+
 class TestDataBlamer < Test::Unit::TestCase
 
   def setup
@@ -96,6 +98,8 @@ class TestDataBlamer < Test::Unit::TestCase
   def test_flatten_data
     data      = @revs[0][:data]
     flattened = Chub::DataBlamer.flatten_data data
+
+    assert Hash === flattened
 
     flattened.each do |path, val|
       assert @paths[0].include?(path), "#{path.inspect} was not found in @paths"

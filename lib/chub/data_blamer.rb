@@ -6,18 +6,31 @@ class Chub
     # Diff the data between two revisions of data.
 
     def self.diff data_left, data_right
-      flat_left  = flatten_data data_left
+      out = {}
+
       flat_right = flatten_data data_right
 
-      # DIFF IT!
+      flatten_data data_left do |path, lvalue|
+        rvalue = flat_right[path]
+
+        if rvalue == lvalue
+          out[path] = true
+        else
+          out[path] = false
+        end
+      end
+
+      out
     end
 
 
     ##
-    # Flattens the data structure into two dimensional [path_ary, value] array.
+    # Flattens the data structure into two dimensional path_ary => value hash.
+    # If block is given, gets run when atomic values are found;
+    # passes path and value as args.
 
-    def self.flatten_data data, out=nil, path=nil
-      out  ||= []
+    def self.flatten_data data, out=nil, path=nil, &block
+      out  ||= {}
       path ||= []
 
       case data
@@ -32,7 +45,8 @@ class Chub
           flatten_data val, out, new_path
         end
       else
-        out << [path, data]
+        out[path] = data
+        yield path, data if block_given?
       end
 
       out
