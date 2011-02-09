@@ -1,7 +1,48 @@
 class TestDataBlamer < Test::Unit::TestCase
 
   def setup
+    @paths = [[
+      [],
+      [:root],
+      [:root, :list],
+      [:root, :list, 0],
+      [:root, :list, 1],
+      [:root, :list, 2],
+      [:root, :foo],
+      [:root, :people],
+      [:root, :people, 0],
+      [:root, :people, 0, :name],
+      [:root, :people, 0, :age],
+      [:root, :people, 0, :gender],
+      [:root, :people, 1],
+      [:root, :people, 1, :name],
+      [:root, :people, 1, :age],
+      [:root, :people, 1, :gender],
+      [:root, :people, 2],
+      [:root, :people, 2, :name],
+      [:root, :people, 2, :age],
+      [:root, :people, 2, :gender],
+    ]]
+
     @revs = [
+      {:timestamp => 12347, :author => "jim", :data => {
+        :root => {
+          :list => ["one", "two", "three"],
+          :foo  => "bar",
+          :people => [{
+            :name   => "bob",
+            :age    => 20,
+            :gender => :male
+          },{
+            :name   => "lucy",
+            :age    => 24,
+            :gender => :female
+          },{
+            :name   => "jack",
+            :age    => 42,
+            :gender => :male
+          }]}
+      }},
       {:timestamp => 12347, :author => "jim", :data => {
         :root => {
           :list => ["one", "two", "three"],
@@ -60,7 +101,21 @@ class TestDataBlamer < Test::Unit::TestCase
 
 
   def test_flatten_data
-    flattened = Chub::DataBlamer.flatten_data @revs[0][:data]
-    p flattened
+    data      = @revs[0][:data]
+    flattened = Chub::DataBlamer.flatten_data data
+
+    flattened.each do |path, val|
+      assert @paths[0].include?(path), "#{path.inspect} was not found in @paths"
+
+      data_val = nil
+      dup_path = path.dup
+      expd_val = data
+
+      until dup_path.empty?
+        expd_val = expd_val[dup_path.shift]
+      end
+
+      assert_equal expd_val, val
+    end
   end
 end
