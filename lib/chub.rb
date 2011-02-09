@@ -46,6 +46,7 @@ class Chub
   end
 
 
+  require 'chub/data_blamer'
   require 'chub/app_config'
 end
 
@@ -60,4 +61,4 @@ module Test
   end
 end
 
-Test.setup
+#Test.setup

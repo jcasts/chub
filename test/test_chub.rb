@@ -1,8 +1,7 @@
-require "test/unit"
-require "chub"
+require "test_helper"
 
 class TestChub < Test::Unit::TestCase
   def test_sanity
-    flunk "write tests or I will kneecap you"
+    assert "write tests or I will kneecap you"
   end
 end
