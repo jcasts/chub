@@ -21,9 +21,9 @@ module Couch
     ##
     # Create a new server instance.
 
-    def initialize host, port = 5984
+    def initialize host, port=nil
       @host    = host
-      @port    = port
+      @port    = port || 5984
     end
 
 
