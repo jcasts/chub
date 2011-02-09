@@ -41,8 +41,12 @@ class Chub
   end
 
 
-  Mongoid.configure do |config|
-    config.from_hash(Chub.config['mongo'])
+  def self.configure_mongo mconf=nil
+    mconf ||= Chub.config['mongo']
+
+    Mongoid.configure do |config|
+      config.from_hash mconf
+    end
   end
 
 
@@ -50,8 +54,10 @@ class Chub
   require 'chub/app_config'
 end
 
-module Test
+module MongoSetup
   def self.setup
+    Chub.configure_mongo
+
     Chub::AppConfig.destroy_all
     de = Chub::AppConfig.create_rev "app/default", "def1" => "defval1"
     ac = Chub::AppConfig.create_rev "app/dev", "key1" => "val1"
@@ -61,4 +67,4 @@ module Test
   end
 end
 
-#Test.setup
+#MongoSetup.setup

@@ -2,7 +2,6 @@ class Chub
 
   class DataBlamer
 
-
     ##
     # Diff the data between two revisions of data.
 
@@ -21,8 +20,6 @@ class Chub
       out  ||= []
       path ||= []
 
-      out << [path, data]
-
       case data
       when Array
         data.each_with_index do |val, i|
@@ -34,6 +31,8 @@ class Chub
           new_path = path.dup << key
           flatten_data val, out, new_path
         end
+      else
+        out << [path, data]
       end
 
       out

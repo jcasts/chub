@@ -2,26 +2,19 @@ class TestDataBlamer < Test::Unit::TestCase
 
   def setup
     @paths = [[
-      [],
-      [:root],
-      [:root, :list],
       [:root, :list, 0],
       [:root, :list, 1],
       [:root, :list, 2],
       [:root, :foo],
-      [:root, :people],
-      [:root, :people, 0],
       [:root, :people, 0, :name],
       [:root, :people, 0, :age],
       [:root, :people, 0, :gender],
-      [:root, :people, 1],
       [:root, :people, 1, :name],
       [:root, :people, 1, :age],
       [:root, :people, 1, :gender],
-      [:root, :people, 2],
       [:root, :people, 2, :name],
       [:root, :people, 2, :age],
-      [:root, :people, 2, :gender],
+      [:root, :people, 2, :gender]
     ]]
 
     @revs = [
