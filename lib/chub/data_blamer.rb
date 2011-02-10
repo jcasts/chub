@@ -11,13 +11,17 @@ class Chub
       flat_right = flatten_data data_right
 
       flatten_data data_left do |path, lvalue|
-        rvalue = flat_right[path]
+        rvalue = flat_right.delete path
 
         if rvalue == lvalue
-          out[path] = true
+          out[path] = lvalue
         else
-          out[path] = false
+          out[path] = [lvalue, rvalue]
         end
+      end
+
+      flat_right.each do |path, rvalue|
+        out[path] = [nil, rvalue]
       end
 
       out
