@@ -30,12 +30,15 @@ class Chub
 
     ##
     # Flattens the data structure into two dimensional path_ary => value hash.
-    # If block is given, gets run when atomic values are found;
+    # If block is given, gets run when values are found;
     # passes path and value as args.
 
     def self.flatten_data data, out=nil, path=nil, &block
       out  ||= {}
       path ||= []
+
+      out[path] = data
+      yield path, data if block_given?
 
       case data
       when Array
@@ -48,9 +51,6 @@ class Chub
           new_path = path.dup << key
           flatten_data val, out, new_path
         end
-      else
-        out[path] = data
-        yield path, data if block_given?
       end
 
       out
