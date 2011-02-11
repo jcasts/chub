@@ -103,10 +103,11 @@ class Chub
 
 
     ##
-    # Check if an app_config is already included.
+    # Check if an app_config or app_config name is already included.
 
     def include? app_config
-      self.includes.include? app_config.name
+      conf_name = self.class === app_config ? app_config.name : app_config
+      self.includes.include? conf_name
     end
 
 

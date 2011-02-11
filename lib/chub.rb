@@ -50,6 +50,9 @@ class Chub
   end
 
 
+  require 'chub/meta_node'
+  require 'chub/meta_array'
+  require 'chub/meta_hash'
   require 'chub/data_blamer'
   require 'chub/app_config'
 end

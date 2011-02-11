@@ -31,14 +31,18 @@ class Chub
     ##
     # Flattens the data structure into two dimensional path_ary => value hash.
     # If block is given, gets run when values are found;
-    # passes path and value as args.
+    # passes path and value as args. If the block returns true-ish,
+    # the method will continue recursively mining the data, otherwise will
+    # move on to the next sibling if available.
 
     def self.flatten_data data, out=nil, path=nil, &block
       out  ||= {}
       path ||= []
 
       out[path] = data
-      yield path, data if block_given?
+      continue = block.call(path, data) if block_given?
+
+      return out unless continue
 
       case data
       when Array
@@ -77,7 +81,7 @@ class Chub
     # on the stack will be entirely attributed to that revision,
     # otherwise the revision information will be blank.
 
-    def blame last_blank=false
+    def blame last_blank=true
       
     end
   end
