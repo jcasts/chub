@@ -6,6 +6,17 @@ class Chub
   class MetaHash < MetaNode
 
     ##
+    # Create a new MetaHash and assign metadata to all child keys and nodes.
+
+    def initialize hash, meta=nil
+      super
+
+      hash.keys.each{|k| MetaNode.build k, meta unless MetaNode === k}
+      hash.values.each{|v| MetaNode.build v, meta unless MetaNode === v}
+    end
+
+
+    ##
     # Access a value of the wrapped hash.
 
     def [] key

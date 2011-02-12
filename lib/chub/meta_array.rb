@@ -6,6 +6,15 @@ class Chub
   class MetaArray < MetaNode
 
     ##
+    # Create a new MetaArray and assign metadata to all child keys and nodes.
+
+    def initialize arr, meta=nil
+      super
+      arr.each{|v| MetaNode.build v, meta unless MetaNode === v}
+    end
+
+
+    ##
     # Returns the child metadata with the most recent change.
 
     def meta

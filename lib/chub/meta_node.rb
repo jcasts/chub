@@ -5,6 +5,22 @@ class Chub
 
   class MetaNode
 
+    ##
+    # Creates a new Meta object based on whether the value is a
+    # Hash, Array, or other Object.
+    #
+    # If the value is a Hash or an Array, the metadata will be applied
+    # recursively.
+
+    def self.build value, meta=nil
+      case value
+      when Hash  then MetaHash.new value, meta
+      when Array then MetaArray.new value, meta
+      else
+        new value, meta
+      end
+    end
+
 
     # The object to assign metadata to.
     attr_reader :value
