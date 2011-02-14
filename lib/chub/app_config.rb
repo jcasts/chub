@@ -37,9 +37,13 @@ class Chub
 
     ##
     # Returns the latest AppConfig instance with the given name.
+    # If a revision (or its first few characters) is given, will return
+    # the latest app_config with that matches it.
 
-    def self.latest name
-      self.last :conditions => {:name => name}
+    def self.latest name, rev=nil
+      conditions = {:name => name}
+      conditions[:rev] =  /^#{rev}/ if rev
+      self.where(conditions).order_by(:updated_at.asc).limit(1).first
     end
 
 
