@@ -106,62 +106,84 @@ class Chub
       return data_right if data_left.class != data_right.class
 
       case data_left
-      when Hash
+      when Hash, MetaHash
+        compare_hashes data_left, data_right
 
-        data_left.each do |lkey, lvalue|
-          # Same value, do nothing
-          data_right.delete lkey and next if data_right[lkey] == data_left[lkey]
-
-          # Check if key was deleted, or value was moved
-          data_right.each do |rkey, rvalue|
-            if rvalue == lvalue && data_left[rkey] != rvalue
-              data_left[rkey] = data_left[lkey]
-              data_right.delete rkey
-            elsif !data_left.has_key?(rkey)
-              data_left[rkey] = data_right.delete rkey
-            end
-          end
-
-          # Check if value was changed
-          if data_right.has_key? lkey
-            data_left[lkey] = recursive_compare lvalue, data_right.delete(lkey)
-          else
-            data_left.delete lkey
-          end
-        end
-
-        data_left
-
-      when Array
-        output = []
-
-        i = -1
-
-        until data_right.empty?
-          i = i.next
-
-          if data_right.first == data_left[i]
-            data_right.shift
-            output << data_left[i]
-            next
-          end
-
-          ri = data_right.index data_left[i] if data_left.length >= i + 1
-
-          if ri
-            index = ri - 1
-            output.concat data_right.slice!(0..index)
-
-          else
-            output << recursive_compare(data_left[i], data_right.shift)
-          end
-        end
-
-        output
+      when Array, MetaArray
+        compare_arrays data_left, data_right
 
       else
         data_right
       end
+    end
+
+
+    ##
+    # Compare and merge two hashes.
+
+    def compare_hashes data_left, data_right
+      data_left.each do |lkey, lvalue|
+        # Same value, do nothing
+        data_right.delete lkey and next if data_right[lkey] == data_left[lkey]
+
+        # Check if key was deleted, or value was moved
+        data_right.each do |rkey, rvalue|
+          if rvalue == lvalue && data_left[rkey] != rvalue
+            data_left[rkey] = data_left[lkey]
+            data_right.delete rkey
+          elsif !data_left.has_key?(rkey)
+            data_left[rkey] = data_right.delete rkey
+          end
+        end
+
+        # Check if value was changed
+        if data_right.has_key? lkey
+          data_left[lkey] = recursive_compare lvalue, data_right.delete(lkey)
+        else
+          data_left.delete lkey
+        end
+      end
+
+      data_left
+    end
+
+
+    ##
+    # Compare and merge two arrays.
+
+    def compare_arrays data_left, data_right
+      output = MetaNode.build(Array.new, data_right.meta)
+      i = -1
+
+      until data_right.empty?
+        i = i.next
+
+        if data_right.first == data_left[i]
+          data_right.shift
+          output << data_left[i]
+          next
+        end
+
+        ri = data_right.index data_left[i] if data_left.length >= i + 1
+        li = data_left.index data_right[0]
+
+        if ri # item was found further down the right array, pull range
+          index = ri - 1
+          output.concat data_right.slice!(0..index)
+
+          data_right.shift
+          output << data_left[i]
+
+        elsif li && li > i # item was found further down the left array, skip
+          i = li - 1
+          next
+
+        else
+          output << recursive_compare(data_left[i], data_right.shift)
+        end
+      end
+
+      output
     end
 
 

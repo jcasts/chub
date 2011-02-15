@@ -9,8 +9,9 @@ class Chub
     # Create a new MetaArray and assign metadata to all child keys and nodes.
 
     def initialize arr, meta=nil
-      super
-      arr.each{|v| MetaNode.build v, meta unless MetaNode === v}
+      @value = arr.dup
+      @meta  = meta
+      @value.map!{|v| MetaNode.build v, meta unless MetaNode === v}
     end
 
 
@@ -18,9 +19,10 @@ class Chub
     # Return the index of a data object or meta node.
 
     def index obj
-      @value.each do |v|
-        return true if v == obj || obj == v
+      @value.each_with_index do |v, i|
+        return i if v == obj || obj == v
       end
+      nil
     end
 
 
@@ -28,19 +30,7 @@ class Chub
     # Returns the child metadata with the most recent change.
 
     def meta
-      meta     = nil
-      path_key = nil
-
-      @value.each_with_index do |val, i|
-        next unless val.respond_to? :meta
-
-        meta = val.meta.dup and path_key = i if !meta ||
-          meta && val.meta && val.meta[:timestamp] > meta[:timestamp]
-      end
-
-      (meta[:path] ||= []).unshift path_key if meta && path_key
-
-      meta
+      @meta
     end
 
 
