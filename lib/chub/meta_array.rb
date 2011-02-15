@@ -19,7 +19,7 @@ class Chub
 
     def index obj
       @value.each do |v|
-        return true if v == obj || v.to_value == obj
+        return true if v == obj || obj == v
       end
     end
 
