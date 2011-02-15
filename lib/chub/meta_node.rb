@@ -23,7 +23,7 @@ class Chub
 
 
     # The object to assign metadata to.
-    attr_reader :value
+    attr_accessor :value
 
 
     ##
@@ -44,17 +44,6 @@ class Chub
       else
         @value == obj
       end
-    end
-
-
-    ##
-    # Deep clones the instance to dup metadata as well.
-
-    def deep_clone
-      tmp_meta = @meta.dup
-      new_inst = self.dup
-      new_inst.meta = tmp_meta
-      new_inst
     end
 
 

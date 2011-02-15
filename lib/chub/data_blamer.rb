@@ -73,11 +73,6 @@ class Chub
     def initialize *revisions
       @revisions = revisions
       @revisions.sort!{|x, y| x[:timestamp] <=> y[:timestamp]}
-
-      @revisions.map! do |r|
-        r = r.dup
-        MetaNode.build r.delete(:data), r
-      end
     end
 
 
@@ -87,20 +82,10 @@ class Chub
     # otherwise the revision information will be blank.
 
     def blame last_blank=true
-      if last_blank
-        old_meta = @revision.first.meta.dup
-        @revision.first.meta.each{|k, v| @revision.first.meta[k] = nil}
-      end
+      blamed = nil
 
-      blamed = @revision.first.dup
-
-      @revisions[1..-1].each do |rev|
-        blamed = diff blamed, rev
-      end
-
-
-      if last_blank
-        old_meta.each{|k, v| @revision.first.meta[k] = v}
+      @revisions.each do |rev|
+        blamed = compare blamed, rev.dup
       end
 
       blamed
@@ -108,9 +93,111 @@ class Chub
 
 
     ##
-    # Diff two MetaNode data objects.
+    # Compare two data objects and return a MetaNode.
 
-    def diff data_left, data_right
+    def compare data_left, data_right
+      MetaNode.build data_right.delete(:data), data_right
+    end
+
+
+    def recursive_compare data_left, data_right
+      return data_left  if data_left == data_right
+      return data_right if data_left.class != data_right.class
+
+      case data_left
+      when Hash
+
+        data_left.each do |lkey, lvalue|
+          # Same value, do nothing
+          data_right.delete lkey and next if data_right[lkey] == data_left[lkey]
+
+          # Check if key was deleted, or value was moved
+          data_right.each do |rkey, rvalue|
+            if rvalue == lvalue && data_left[rkey] != rvalue
+              data_left[rkey] = data_left[lkey]
+              data_right.delete rkey
+            elsif !data_left.has_key?(rkey)
+              data_left[rkey] = data_right.delete rkey
+            end
+          end
+
+          # Check if value was changed
+          if data_right.has_key? lkey
+            data_left[lkey] = recursive_compare lvalue, data_right.delete(lkey)
+          else
+            data_left.delete lkey
+          end
+        end
+
+        data_left
+
+      when Array
+        output = []
+
+        i = -1
+
+        until data_right.empty?
+          i = i.next
+
+          if data_right.first == data_left[i]
+            data_right.shift
+            output << data_left[i]
+            next
+          end
+
+          ri = data_right.index data_left[i] if data_left.length >= i + 1
+
+          if ri
+            index = ri - 1
+            output.concat data_right.slice!(0..index)
+
+          else
+            output << recursive_compare(data_left[i], data_right.shift)
+          end
+        end
+
+        output
+
+      else
+        data_right
+      end
+    end
+
+
+    ##
+    # Creates a String representation from data.
+
+    def data_to_string data, indent=0
+      case data
+
+      when Hash
+        output = "{\n"
+
+        data_values =
+          data.map do |key, value|
+            pad = " " * indent
+            subdata = ordered_data_string value, indent + 1
+            "#{pad}#{key.inspect} => #{subdata}"
+          end
+
+        output << data_values.join(",\n") << "\n" unless data_values.empty?
+        output << "#{" " * indent}}"
+
+      when Array
+        output = "[\n"
+
+        data_values =
+          data.map do |value|
+            pad = " " * indent
+            "#{pad}#{ordered_data_string value, indent + 1}"
+          end
+
+        output << data_values.join(",\n") << "\n" unless data_values.empty?
+        output << "#{" " * indent}]"
+
+      else
+        data.inspect
+      end
     end
   end
 end

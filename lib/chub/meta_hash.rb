@@ -37,8 +37,8 @@ class Chub
 
     def meta= val
       @value.each do |k, v|
-        k.meta = val if k.respond_to? :meta
-        v.meta = val if v.respond_to? :meta
+        k.meta = val if k.respond_to? :meta=
+        v.meta = val if v.respond_to? :meta=
       end
 
       @meta = val

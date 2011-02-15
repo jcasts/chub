@@ -15,6 +15,16 @@ class Chub
 
 
     ##
+    # Return the index of a data object or meta node.
+
+    def index obj
+      @value.each do |v|
+        return true if v == obj || v.to_value == obj
+      end
+    end
+
+
+    ##
     # Returns the child metadata with the most recent change.
 
     def meta
@@ -39,7 +49,7 @@ class Chub
 
     def meta= val
       @value.each do |v|
-        v.meta = val if v.respond_to? :meta
+        v.meta = val if v.respond_to? :meta=
       end
 
       @meta = val
