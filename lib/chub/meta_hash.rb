@@ -33,6 +33,19 @@ class Chub
 
 
     ##
+    # Apply the meta value to self, and recursively to keys and children.
+
+    def meta= val
+      @value.each do |k, v|
+        k.meta = val if k.respond_to? :meta
+        v.meta = val if v.respond_to? :meta
+      end
+
+      @meta = val
+    end
+
+
+    ##
     # Merge with and modify the wrapped hash.
 
     def merge! hash
@@ -71,7 +84,7 @@ class Chub
       @value.each do |key, val|
         if val.respond_to? :meta
           if !meta ||
-            meta && val.meta && val.meta[:updated_at] > meta[:updated_at]
+            meta && val.meta && val.meta[:timestamp] > meta[:timestamp]
             meta = val.meta.dup
             path_key = key
           end
@@ -79,7 +92,7 @@ class Chub
 
         if key.respond_to? :meta
           if !meta ||
-            meta && val.meta && key.meta[:updated_at] > meta[:updated_at]
+            meta && val.meta && key.meta[:timestamp] > meta[:timestamp]
             meta = key.meta.dup
           end
         end

@@ -5,7 +5,7 @@ class Chub
     ##
     # Diff the data between two revisions of data.
 
-    def self.diff data_left, data_right
+    def self.old_diff data_left, data_right
       out = {}
 
       flat_right = flatten_data data_right
@@ -65,14 +65,19 @@ class Chub
     # Instantiate the blamer with any number of data revision hashes.
     #
     # Hashes must include the following key/values:
-    # :author::    String - The person who made the change.
     # :timestamp:: Time   - When the change was made.
     # :data::      Object - The data to diff.
     #
-    # Optionally, a :revision key may be given for informational purposes.
+    # Any additional key/values will be added to the meta data.
 
     def initialize *revisions
-      @revisions = revisions.sort{|x, y| x[:timestamp] <=> y[:timestamp]}
+      @revisions = revisions
+      @revisions.sort!{|x, y| x[:timestamp] <=> y[:timestamp]}
+
+      @revisions.map! do |r|
+        r = r.dup
+        MetaNode.build r.delete(:data), r
+      end
     end
 
 
@@ -82,7 +87,30 @@ class Chub
     # otherwise the revision information will be blank.
 
     def blame last_blank=true
-      
+      if last_blank
+        old_meta = @revision.first.meta.dup
+        @revision.first.meta.each{|k, v| @revision.first.meta[k] = nil}
+      end
+
+      blamed = @revision.first.dup
+
+      @revisions[1..-1].each do |rev|
+        blamed = diff blamed, rev
+      end
+
+
+      if last_blank
+        old_meta.each{|k, v| @revision.first.meta[k] = v}
+      end
+
+      blamed
+    end
+
+
+    ##
+    # Diff two MetaNode data objects.
+
+    def diff data_left, data_right
     end
   end
 end

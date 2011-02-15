@@ -25,12 +25,24 @@ class Chub
         next unless val.respond_to? :meta
 
         meta = val.meta.dup and path_key = i if !meta ||
-          meta && val.meta && val.meta[:updated_at] > meta[:updated_at]
+          meta && val.meta && val.meta[:timestamp] > meta[:timestamp]
       end
 
       (meta[:path] ||= []).unshift path_key if meta && path_key
 
       meta
+    end
+
+
+    ##
+    # Apply the meta value to self, and recursively to children.
+
+    def meta= val
+      @value.each do |v|
+        v.meta = val if v.respond_to? :meta
+      end
+
+      @meta = val
     end
 
 

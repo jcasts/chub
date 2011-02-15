@@ -25,8 +25,6 @@ class Chub
     # The object to assign metadata to.
     attr_reader :value
 
-    # The metadata assigned to the wrapped object.
-    attr_writer :meta
 
     ##
     # Create a new MetaNode with the value to wrap and optional metadata.
@@ -50,11 +48,31 @@ class Chub
 
 
     ##
-    # Accessor for the meta attribute.
+    # Deep clones the instance to dup metadata as well.
+
+    def deep_clone
+      tmp_meta = @meta.dup
+      new_inst = self.dup
+      new_inst.meta = tmp_meta
+      new_inst
+    end
+
+
+    ##
+    # Reader for the meta attribute.
     # Overridden in MetaArray and MetaHash classes.
 
     def meta
       @meta
+    end
+
+
+    ##
+    # Writter for the meta attribute.
+    # Overridden in MetaArray and MetaHash classes.
+
+    def meta= val
+      @meta = val
     end
 
 
