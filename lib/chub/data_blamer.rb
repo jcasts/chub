@@ -65,14 +65,14 @@ class Chub
     # Instantiate the blamer with any number of data revision hashes.
     #
     # Hashes must include the following key/values:
-    # :timestamp:: Time   - When the change was made.
     # :data::      Object - The data to diff.
     #
     # Any additional key/values will be added to the meta data.
+    #
+    # The revisions Array must be sorted from oldest to newest.
 
     def initialize *revisions
       @revisions = revisions
-      @revisions.sort!{|x, y| x[:timestamp] <=> y[:timestamp]}
     end
 
 
@@ -96,7 +96,8 @@ class Chub
     # Compare two data objects and return a MetaNode.
 
     def compare data_left, data_right
-      MetaNode.build data_right.delete(:data), data_right
+      recursive_compare MetaNode.build(data_left.delete(:data), data_left),
+                        MetaNode.build(data_right.delete(:data), data_right)
     end
 
 
