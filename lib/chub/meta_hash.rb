@@ -78,29 +78,7 @@ class Chub
     # Returns the child metadata with the most recent change.
 
     def meta
-      meta     = nil
-      path_key = nil
-
-      @value.each do |key, val|
-        if val.respond_to? :meta
-          if !meta ||
-            meta && val.meta && val.meta[:timestamp] > meta[:timestamp]
-            meta = val.meta.dup
-            path_key = key
-          end
-        end
-
-        if key.respond_to? :meta
-          if !meta ||
-            meta && val.meta && key.meta[:timestamp] > meta[:timestamp]
-            meta = key.meta.dup
-          end
-        end
-      end
-
-      (meta[:path] ||= []).unshift path_key if meta && path_key
-
-      meta
+      @meta
     end
 
 

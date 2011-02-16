@@ -149,6 +149,24 @@ class TestDataBlamer < Test::Unit::TestCase
   end
 
 
+  def test_compare_arrays_equal
+    arr_left  = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
+    arr_right = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
+
+    meta_left  = Chub::MetaNode.build arr_left.dup,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right.dup, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_left, new_arr.to_value
+
+    0.upto(arr_left.length - 1) do |i|
+      assert_equal "bob", new_arr[i].meta[:user],
+        "#{new_arr[i].value} was not changed by bob"
+    end
+  end
+
+
   def test_flatten_data
     data      = @revs[0][:data]
     flattened = Chub::DataBlamer.flatten_data data
