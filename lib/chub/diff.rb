@@ -188,6 +188,9 @@ class Chub
     #    [[], ["in str2", "more str2"]],
     #    "match 2",
     #    [["str1 val"], ["str2 val"]]]
+    #
+    # If a block is given, will pass it both sides of the diff as
+    # an array, or the string matched if there is no diff.
 
     def create_diff
       diff_ary = []
@@ -201,10 +204,12 @@ class Chub
 
         if item1 == item2
           if sub_diff
+            yield sub_diff if block_given?
             diff_ary << sub_diff
             sub_diff = nil
           end
 
+          yield item1 if block_given?
           diff_ary << item1
           next
         end
@@ -227,7 +232,10 @@ class Chub
         end
       end
 
-      diff_ary << sub_diff if sub_diff
+      if sub_diff
+        yield sub_diff if block_given?
+        diff_ary << sub_diff
+      end
 
       diff_ary
     end
