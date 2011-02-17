@@ -11,7 +11,7 @@ class Chub
     # to blame, and a meta key with the blame data.
 
     def self.new_from_data *data_revs
-      data_revs.map! do |rev|
+      data_revs.flatten.map! do |rev|
         {:meta => rev[:meta], :data => Diff.ordered_data_string(rev[:data])}
       end
 
@@ -23,6 +23,7 @@ class Chub
     # Create a new blamer with string history and revision metadata.
     # Each revision must be a hash containing a data key with the string
     # to blame, and a meta key with the blame data.
+    # Blame data must be an array of Strings.
     #
     # Revisions should be in order from newest to oldest.
 
@@ -36,7 +37,8 @@ class Chub
     # with blame/line pairs.
 
     def create_blame last_blank=true
-      blame = [@revisions.first[:meta]] * @revisions.first[:data].lines.count
+      blame = Array.new @revisions.first[:data].lines.count,
+                        @revisions.first[:meta]
 
       @revisions[1..-1].each_with_index do |rev, i|
         line = 0
@@ -58,6 +60,15 @@ class Chub
       end
 
       blame.zip @revisions.first[:data]
+    end
+
+
+    ##
+    # Creates a formatted blamed String.
+
+    def formatted last_blank=true
+      blame = self.create_blame last_blank
+      cols  = []
     end
   end
 end
