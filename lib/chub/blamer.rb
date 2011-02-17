@@ -44,7 +44,7 @@ class Chub
         line = 0
 
         rev_meta = rev[:meta]
-        rev_meta = nil if last_blank && @revisions.length = i+2
+        rev_meta = nil if last_blank && @revisions.length == i+2
 
         differ = Diff.new @revisions.first[:data], rev[:data]
 
@@ -59,7 +59,7 @@ class Chub
         end
       end
 
-      blame.zip @revisions.first[:data]
+      blame.zip @revisions.first[:data].split("\n")
     end
 
 
@@ -67,8 +67,34 @@ class Chub
     # Creates a formatted blamed String.
 
     def formatted last_blank=true
-      blame = self.create_blame last_blank
-      cols  = []
+      blame = self.create_blame(last_blank)
+
+      col_widths = []
+
+      blame.each do |meta, line|
+        next unless meta
+
+        meta.each_with_index do |col, i|
+          next unless col_widths[i].nil? || col_widths[i] < col.to_s.length
+          col_widths[i] = col.to_s.length
+        end
+      end
+
+      out = ""
+      line_num_width = blame.length.to_s.length
+
+      blame.each_with_index do |(meta, line), i|
+        meta ||= []
+
+        col_widths.each_with_index do |width, j|
+          out << meta[j].to_s.ljust(width)
+          out << " "
+        end
+
+        out << "#{i.to_s.rjust(line_num_width)}) #{line}\n"
+      end
+
+      out
     end
   end
 end
