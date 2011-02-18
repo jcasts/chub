@@ -143,8 +143,16 @@ class Chub
             puts "found #{rkey}"
 
           elsif !data_left.has_key?(rkey)
-            puts "setting #{rkey}"
-            output[rkey] = data_right.delete rkey
+            key, val = data_left.find{|k, v| v == rvalue}
+
+            if key
+              puts "setting #{rkey} from left"
+              output[rkey] = data_left.delete key
+              data_right.delete rkey
+            else
+              puts "setting #{rkey} from right"
+              output[rkey] = data_right.delete rkey
+            end
           end
         end
 

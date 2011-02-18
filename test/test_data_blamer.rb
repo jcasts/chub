@@ -129,6 +129,31 @@ class TestDataBlamer < Test::Unit::TestCase
   end
 
 
+  def test_compare_hashes_equal
+    hash_left  = {"key1" => "val1", "key2" => "val2", "key3" => "val3"}
+    hash_right = {"key2" => "val2", "key1" => "val1", "key3" => "val3"}
+
+    meta_left  = Chub::MetaNode.build hash_left.dup,  :user => "bob"
+    meta_right = Chub::MetaNode.build hash_right.dup, :user => "jen"
+
+    new_hash = @blamer.compare_hashes meta_left, meta_right
+
+    assert_equal hash_right, new_hash.to_value
+
+    key1 = new_hash.keys.find{|k| k == "key1"}
+    assert_equal "bob", key1.meta[:user]
+    assert_equal "bob", new_hash["key1"].meta[:user]
+
+    key2 = new_hash.keys.find{|k| k == "key2"}
+    assert_equal "bob", key2.meta[:user]
+    assert_equal "bob", new_hash["key2"].meta[:user]
+
+    key3 = new_hash.keys.find{|k| k == "key3"}
+    assert_equal "bob", key3.meta[:user]
+    assert_equal "bob", new_hash["key3"].meta[:user]
+  end
+
+
   def test_compare_arrays
     arr_left  = ["one", "two", "three", "four", "five"]
     arr_right = ["zero", "one", "two", "four", "five"]
