@@ -10,9 +10,15 @@ class Chub
 
     def initialize hash, meta=nil
       super
+      @value.keys.each do |k|
+        v = @value[k]
+        v = MetaNode.build v, meta unless MetaNode === v
 
-      hash.keys.each{|k| MetaNode.build k, meta unless MetaNode === k}
-      hash.values.each{|v| MetaNode.build v, meta unless MetaNode === v}
+        k = MetaNode.build k, meta unless MetaNode === k
+
+        @value.delete k.value
+        @value[k] = v
+      end
     end
 
 
@@ -28,7 +34,32 @@ class Chub
     # Assign a value of the wrapped hash.
 
     def []= key, val
-      @value.each{|k,v| @value[k] = val and return if k == key}
+      @value.delete key.to_value if key.respond_to? :to_value
+      @value[key] = val
+    end
+
+
+    ##
+    # Delete an item from @value based on the metanode key or key.
+
+    def delete key
+      k = @value.keys.find{|k| k == key || key == k}
+      @value.delete k
+    end
+
+
+    ##
+    # Checks if the @value has the given key.
+
+    def has_key? key
+      puts "---"
+      @value.keys.each do |k|
+        puts "#{k == key || key == k} - #{k} <> #{key}"
+        return true if k == key || key == k
+      end
+      puts "didn't find #{key}"
+
+      false
     end
 
 
