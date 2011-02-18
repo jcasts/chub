@@ -143,7 +143,7 @@ class Chub
             puts "found #{rkey}"
 
           elsif !data_left.has_key?(rkey)
-            key, val = data_left.find{|k, v| v == rvalue}
+            key, = data_left.find{|k, v| v == rvalue}
 
             if key
               puts "setting #{rkey} from left"
