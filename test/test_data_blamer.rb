@@ -154,12 +154,37 @@ class TestDataBlamer < Test::Unit::TestCase
   end
 
 
+  def test_compare_hashes_recursive
+    hash_left  = @revs[1]
+    hash_right = @revs[2]
+
+    meta_left  = Chub::MetaNode.build hash_left.dup,  :user => "bob"
+    meta_right = Chub::MetaNode.build hash_right.dup, :user => "jen"
+
+    new_hash = @blamer.compare_hashes meta_left, meta_right
+
+    assert_equal hash_right, new_hash.to_value
+
+    key1 = new_hash.keys.find{|k| k == "key1"}
+    assert_equal "bob", key1.meta[:user]
+    assert_equal "bob", new_hash["key1"].meta[:user]
+
+    key2 = new_hash.keys.find{|k| k == "key2"}
+    assert_equal "bob", key2.meta[:user]
+    assert_equal "bob", new_hash["key2"].meta[:user]
+
+    key3 = new_hash.keys.find{|k| k == "key3"}
+    assert_equal "bob", key3.meta[:user]
+    assert_equal "bob", new_hash["key3"].meta[:user]
+  end
+
+
   def test_compare_arrays
     arr_left  = ["one", "two", "three", "four", "five"]
     arr_right = ["zero", "one", "two", "four", "five"]
 
-    meta_left  = Chub::MetaNode.build arr_left.dup,  :user => "bob"
-    meta_right = Chub::MetaNode.build arr_right.dup, :user => "jen"
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
 
     new_arr = @blamer.compare_arrays meta_left, meta_right
 
@@ -176,8 +201,8 @@ class TestDataBlamer < Test::Unit::TestCase
     arr_left  = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
     arr_right = ["0", "one", ["two", "four"], "other", ["five", "six", "seven"]]
 
-    meta_left  = Chub::MetaNode.build arr_left.dup,  :user => "bob"
-    meta_right = Chub::MetaNode.build arr_right.dup, :user => "jen"
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
 
     new_arr = @blamer.compare_arrays meta_left, meta_right
 
@@ -203,8 +228,8 @@ class TestDataBlamer < Test::Unit::TestCase
     arr_left  = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
     arr_right = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
 
-    meta_left  = Chub::MetaNode.build arr_left.dup,  :user => "bob"
-    meta_right = Chub::MetaNode.build arr_right.dup, :user => "jen"
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
 
     new_arr = @blamer.compare_arrays meta_left, meta_right
 

@@ -122,6 +122,9 @@ class Chub
     # Compare and merge two hashes.
 
     def compare_hashes data_left, data_right
+      data_left.value  = data_left.value.dup
+      data_right.value = data_right.value.dup
+
       output = MetaNode.build(Hash.new, data_right.meta)
 
       data_left.each do |lkey, lvalue|
@@ -159,7 +162,7 @@ class Chub
         # Check if value was changed
         if data_right.has_key? lkey
           output[lkey] = recursive_compare lvalue, data_right.delete(lkey)
-          puts "submatched #{lkey} -> #{output[lkey]}"
+          puts "submatched #{lkey} -> #{output[lkey].inspect}"
         end
 
         data_left.delete lkey

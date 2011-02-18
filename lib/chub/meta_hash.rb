@@ -52,12 +52,9 @@ class Chub
     # Checks if the @value has the given key.
 
     def has_key? key
-      puts "---"
       @value.keys.each do |k|
-        puts "#{k == key || key == k} - #{k} <> #{key}"
         return true if k == key || key == k
       end
-      puts "didn't find #{key}"
 
       false
     end
