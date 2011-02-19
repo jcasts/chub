@@ -174,33 +174,38 @@ class Chub
 
     def compare_arrays data_left, data_right
       output = MetaNode.build(Array.new, data_right.meta)
-      i = -1
 
       until data_right.empty?
-        i = i.next
-
-        if data_right.first == data_left[i]
+        puts "comparing #{data_right.first} - #{data_left.first}"
+        if data_right.first == data_left.first
           data_right.shift
-          output << data_left[i]
+          output << data_left.shift
           next
         end
 
-        ri = data_right.index data_left[i] if data_left.length >= i + 1
+        ri = data_right.index data_left[0] if !data_left.empty?
         li = data_left.index data_right[0]
+
+        if ri && li
+          puts "found both indexes: #{ri} #{li}"
+          ri > li ? ri = nil : li = nil
+        end
 
         if ri # item was found further down the right array, pull range
           index = ri - 1
           output.concat data_right.slice!(0..index)
 
           data_right.shift
-          output << data_left[i]
+          output << data_left.shift
 
-        elsif li && li > i # item was found further down the left array, skip
-          i = li - 1
-          next
+        elsif li # item was found further down the left array, skip
+          puts "moving to li #{li}"
+          index = li - 1
+
+          data_left.slice!(0..index)
 
         else
-          output << recursive_compare(data_left[i], data_right.shift)
+          output << recursive_compare(data_left.shift, data_right.shift)
         end
       end
 
