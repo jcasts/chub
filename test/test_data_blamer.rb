@@ -155,27 +155,30 @@ class TestDataBlamer < Test::Unit::TestCase
 
 
   def test_compare_hashes_recursive
-    hash_left  = @revs[1]
-    hash_right = @revs[2]
+    hash_left  = @revs[1][:data]
+    hash_right = @revs[2][:data]
 
     meta_left  = Chub::MetaNode.build hash_left.dup,  :user => "bob"
     meta_right = Chub::MetaNode.build hash_right.dup, :user => "jen"
 
     new_hash = @blamer.compare_hashes meta_left, meta_right
 
-    assert_equal hash_right, new_hash.to_value
+    #assert_equal hash_right, new_hash.to_value
 
-    key1 = new_hash.keys.find{|k| k == "key1"}
-    assert_equal "bob", key1.meta[:user]
-    assert_equal "bob", new_hash["key1"].meta[:user]
+    kroot = new_hash.keys.find{|k| k == :root}
+    assert_equal "bob", kroot.meta[:user]
+    assert_equal "jen", new_hash[:root].meta[:user]
 
-    key2 = new_hash.keys.find{|k| k == "key2"}
-    assert_equal "bob", key2.meta[:user]
-    assert_equal "bob", new_hash["key2"].meta[:user]
+    klist = new_hash[:root].keys.find{|k| k == :list}
+    assert_equal "bob", klist.meta[:user]
+    assert_equal "jen", new_hash[:root][:list].meta[:user]
+    #assert_equal "jen", new_hash[:root][:list][0].meta[:user]
+    #assert_equal "bob", new_hash[:root][:list][1].meta[:user]
+    #assert_equal "bob", new_hash[:root][:list][2].meta[:user]
 
-    key3 = new_hash.keys.find{|k| k == "key3"}
-    assert_equal "bob", key3.meta[:user]
-    assert_equal "bob", new_hash["key3"].meta[:user]
+    #klist = new_hash[:root].keys.find{|k| k == :list}
+    #assert_equal "bob", klist.meta[:user]
+    #assert_equal "jen", new_hash[:root].meta[:user]
   end
 
 
@@ -221,6 +224,120 @@ class TestDataBlamer < Test::Unit::TestCase
     assert_equal "bob", new_arr[4][0].meta[:user]
     assert_equal "jen", new_arr[4][1].meta[:user]
     assert_equal "bob", new_arr[4][2].meta[:user]
+  end
+
+
+  def test_compare_arrays_insert_right
+    arr_left  = ["one", "two", "three", "four", "five"]
+    arr_right = ["one", 1, 2, 3, "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "bob", new_arr[0].meta[:user]
+    assert_equal "jen", new_arr[1].meta[:user]
+    assert_equal "jen", new_arr[2].meta[:user]
+    assert_equal "jen", new_arr[3].meta[:user]
+    assert_equal "bob", new_arr[4].meta[:user]
+    assert_equal "bob", new_arr[5].meta[:user]
+    assert_equal "bob", new_arr[6].meta[:user]
+  end
+
+
+  def test_compare_arrays_insert_left
+    arr_left  = ["one", 1, 2, 3, "two", "three", "four", "five"]
+    arr_right = ["one", "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "bob", new_arr[0].meta[:user]
+    assert_equal "bob", new_arr[1].meta[:user]
+    assert_equal "bob", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
+  end
+
+
+  def test_compare_arrays_insert_both
+    arr_left  = ["one", 1, 2, 3, "two", "three", "four", "five"]
+    arr_right = ["one", 7, 8, "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "bob", new_arr[0].meta[:user]
+    assert_equal "jen", new_arr[1].meta[:user]
+    assert_equal "jen", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
+    assert_equal "bob", new_arr[4].meta[:user]
+    assert_equal "bob", new_arr[5].meta[:user]
+  end
+
+
+  def test_compare_arrays_mismatched_start
+    arr_left  = ["one", 1, 2, 3, "two", "three", "four", "five"]
+    arr_right = ["foobar", "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "jen", new_arr[0].meta[:user]
+    assert_equal "bob", new_arr[1].meta[:user]
+    assert_equal "bob", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
+  end
+
+
+  def test_compare_arrays_repeated_value_right
+    arr_left  = ["one", 1, 2, 3, "two", "three", "four", "five"]
+    arr_right = ["four", "one", "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "jen", new_arr[0].meta[:user]
+    assert_equal "bob", new_arr[1].meta[:user]
+    assert_equal "bob", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
+    assert_equal "bob", new_arr[4].meta[:user]
+  end
+
+
+  def test_compare_arrays_repeated_value_left
+    arr_left  = ["four", "one", 1, 2, 3, "two", "three", "four", "five"]
+    arr_right = ["one", "two", "four", "five"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "bob", new_arr[0].meta[:user]
+    assert_equal "bob", new_arr[1].meta[:user]
+    assert_equal "bob", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
   end
 
 
