@@ -341,6 +341,24 @@ class TestDataBlamer < Test::Unit::TestCase
   end
 
 
+  def test_compare_arrays_replace_repeat_value_right
+    arr_left  = ["one", "two", "three", "four"]
+    arr_right = ["three", "two", "three", "four"]
+
+    meta_left  = Chub::MetaNode.build arr_left,  :user => "bob"
+    meta_right = Chub::MetaNode.build arr_right, :user => "jen"
+
+    new_arr = @blamer.compare_arrays meta_left, meta_right
+
+    assert_equal arr_right, new_arr.to_value
+
+    assert_equal "jen", new_arr[0].meta[:user]
+    assert_equal "bob", new_arr[1].meta[:user]
+    assert_equal "bob", new_arr[2].meta[:user]
+    assert_equal "bob", new_arr[3].meta[:user]
+  end
+
+
   def test_compare_arrays_equal
     arr_left  = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
     arr_right = ["one", ["two", "three", "four"], "other", ["five", "seven"]]
