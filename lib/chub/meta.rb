@@ -2,6 +2,8 @@ class Chub
 
   class Meta
 
+    class InvalidPathError < Exception; end
+
     ##
     # Creates a new Meta object from a marshalled data structure.
 
@@ -136,30 +138,74 @@ class Chub
 
 
     ##
-    # Sets the data at a given path to val.
-    # Raises a PathNotFound error if a path item other than the last element
+    # Sets the data at a given path Array to val.
+    # Raises a InvalidPathError error if a path item other than the last element
     # is not found.
-    # Raises an ArgumentError if a path already exists with a non matching
-    # datatype.
+    # Raises a TypeError if a path already exists with a non matching
+    # datatype (e.g. using a String as an Array index).
 
     def set_path path, val, meta=nil
+      curr_data = @data
+      prev_data = nil
+      prev_key  = nil
+
+      path.each do |k|
+        raise InvalidPathError,
+          "No such path #{path.inspect} at '#{prev_key}'" unless
+            Hash === curr_data[0] || Array === curr_data[0]
+
+        prev_data = curr_data
+        curr_data = curr_data[0][k]
+        prev_key  = k
+      end
+
+      prev_data[0][prev_key] = val
+
+    rescue TypeError => e
+      raise unless e.message =~ /can't convert String into Integer/
+      raise TypeError, "Invalid key type '#{prev_key}' for path #{path.inspect}"
     end
 
 
     ##
-    # Acts like Meta#set_path but will create the necessary data structures
-    # to accomodate missing path items (Arrays for numbers, otherwise Hashes).
-    #   m = Meta.new :foo => "one", :bar => [3,2,1]
-    #   m.set_path! [:bar, 5, :foobar], "newval"
-    #   m.value
-    #   #=> {:foo => "one", :bar => [3,2,1,nil,nil,{:foobar => "newval"}]}
+    # Acts like Meta#set_path but will create or modify the necessary data
+    # structures to accomodate missing path items
+    # (Arrays for numbers, otherwise Hashes).
     #
     #   m = Meta.new :foo => "one", :bar => [3,2,1]
-    #   m.set_path! [:foo, :foobar], "newval"
+    #   m.set_path! [:bar, 5, :new], "newval"
     #   m.value
-    #   #=> {:foo => {:foobar => "newval"}, :bar => [3,2,1]}
+    #   #=> {:foo => "one", :bar => [3, 2, 1, nil, nil, {:new => "newval"}]}
+    #
+    #   m = Meta.new :foo => "one", :bar => [3,2,1]
+    #   m.set_path! [:foo, :new], "newval"
+    #   m.value
+    #   #=> {:foo => {:new => "newval"}, :bar => [3, 2, 1]}
+    #
+    #   m = Meta.new :foo => "one", :bar => [3, 2, 1]
+    #   m.set_path! [:bar, :new], "newval"
+    #   m.value
+    #   #=> {:foo => "one", :bar => {0 => 3, 1 => 2, 2 => 1, :new => "newval"}}
 
     def set_path! path, val, meta=nil
+      curr_data = @data
+      prev_data = nil
+      prev_key  = nil
+
+      path.each do |k|
+        if Array === curr_data[0] && !(Fixnum === k)
+          curr_data[0] = curr_data[0].to_hash
+
+        elsif !(Hash === curr_data[0]) && !(Array === curr_data[0])
+          curr_data[0] = Fixnum === k ? Array.new : Hash.new
+        end
+
+        prev_data = curr_data
+        curr_data = curr_data[0][k]
+        prev_key  = k
+      end
+
+      prev_data[0][prev_key] = val
     end
 
 
@@ -181,5 +227,14 @@ class Chub
     def marshal
       @data.dup
     end
+  end
+end
+
+
+class Array
+  def to_hash
+    hash = {}
+    each_with_index{|v,k| hash[k] = v}
+    hash
   end
 end
