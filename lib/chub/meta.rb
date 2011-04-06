@@ -67,11 +67,7 @@ class Chub
     # key, assigns the root meta.
 
     def []= key, val
-      if @data[0][key]
-        @data[0][key][0] = val
-      else
-        @data[0][key] = [val, @data[1]]
-      end
+      self.set key, val
     end
 
 
@@ -125,11 +121,45 @@ class Chub
 
     ##
     # Assigns val to the given key, with optional metadata. If no metadata is
-    # given, uses the root meta.
+    # given and value is not a Meta object, uses the root meta.
 
     def set key, val, meta=nil
-      meta ||= @data[1]
-      @data[0][key] = [val, meta]
+      if self.class === val && meta.nil?
+        val = val.marshal
+      else
+        val = val.value if self.class === val
+        val = self.class.assign_meta val, @data[1]
+      end
+
+      @data[0][key] = val
+    end
+
+
+    ##
+    # Sets the data at a given path to val.
+    # Raises a PathNotFound error if a path item other than the last element
+    # is not found.
+    # Raises an ArgumentError if a path already exists with a non matching
+    # datatype.
+
+    def set_path path, val, meta=nil
+    end
+
+
+    ##
+    # Acts like Meta#set_path but will create the necessary data structures
+    # to accomodate missing path items (Arrays for numbers, otherwise Hashes).
+    #   m = Meta.new :foo => "one", :bar => [3,2,1]
+    #   m.set_path! [:bar, 5, :foobar], "newval"
+    #   m.value
+    #   #=> {:foo => "one", :bar => [3,2,1,nil,nil,{:foobar => "newval"}]}
+    #
+    #   m = Meta.new :foo => "one", :bar => [3,2,1]
+    #   m.set_path! [:foo, :foobar], "newval"
+    #   m.value
+    #   #=> {:foo => {:foobar => "newval"}, :bar => [3,2,1]}
+
+    def set_path! path, val, meta=nil
     end
 
 
@@ -140,6 +170,8 @@ class Chub
       raise ArgumentError,
         "Expected type #{self.class} but got #{meta_obj.class}" unless
           self.class === meta_obj
+
+      # TODO: implement merge!
     end
 
 
