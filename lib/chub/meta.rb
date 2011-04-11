@@ -94,14 +94,28 @@ class Chub
 
     ##
     # Merges a Meta object with this one and returns a new Meta object.
+    # Merge will fail and return self if either Meta object's root data
+    # is not an Array or Hash.
 
-    def merge meta_obj
+    def merge meta
       raise ArgumentError,
-        "Expected type #{self.class} but got #{meta_obj.class}" unless
-          self.class === meta_obj
+        "Expected type #{self.class} but got #{meta.class}" unless
+          self.class === meta
 
-      # TODO: implement merge!
+      return self unless (Array === @data[0] || Hash === @data[0]) &&
+                         (Array === meta.data[0] || Hash === meta.data[0])
 
+      new_data = @data[0].dup
+
+      if Array === new_data && Array === meta.data[0]
+        len = meta[0].length
+        new_data[0...len] = meta[0]
+
+      else
+        new_data = new_data.to_hash.merge meta.data[0].to_hash
+      end
+
+      self.class.new_from [new_data, @data[1]]
     end
 
 
