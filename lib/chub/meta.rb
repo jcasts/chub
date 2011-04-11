@@ -8,7 +8,7 @@ class Chub
     # Creates a new Meta object from a marshalled data structure.
 
     def self.new_from data
-      inst = new nil
+      inst = self.new
       inst.data = data
       inst
     end
@@ -52,7 +52,7 @@ class Chub
     #   [data_item, meta_data]
 
     def initialize data=nil, meta=nil
-      @data = assign_meta data, meta
+      @data = self.class.assign_meta data, meta
     end
 
 
@@ -60,7 +60,11 @@ class Chub
     # Gets the data at the given key and returns a new meta instance
 
     def [] key
-      self.class.new_from @data[0][key]
+      if Hash === @data[0] && @data[0].has_key?(key) ||
+         Array === @data[0] && key < @data[0].length
+
+        self.class.new_from @data[0][key]
+      end
     end
 
 
@@ -76,10 +80,20 @@ class Chub
     ##
     # Iterates over each data item and yields a Meta instance.
 
-    def each
-      @data[0].each do |*args|
-        args[-1] = self.class.new args[-1]
-        yield(*args) if block_given?
+    def each &block
+      case @data[0]
+      when Array
+        @data[0].each_index do |i|
+          yield i, self[i]
+        end
+
+      when Hash
+        @data[0].keys.each do |k|
+          yield k, self[k]
+        end
+
+      else
+        @data[0].each &block
       end
     end
 
@@ -98,6 +112,14 @@ class Chub
     # is not an Array or Hash.
 
     def merge meta
+      self.class.new_from([@data[0].dup, @data[1]]).merge! meta
+    end
+
+
+    ##
+    # Same as Meta#merge but modifies the Meta instance.
+
+    def merge! meta
       raise ArgumentError,
         "Expected type #{self.class} but got #{meta.class}" unless
           self.class === meta
@@ -105,17 +127,15 @@ class Chub
       return self unless (Array === @data[0] || Hash === @data[0]) &&
                          (Array === meta.data[0] || Hash === meta.data[0])
 
-      new_data = @data[0].dup
-
-      if Array === new_data && Array === meta.data[0]
-        len = meta[0].length
-        new_data[0...len] = meta[0]
+      if Array === @data[0] && Array === meta.data[0]
+        len = meta.data[0].length
+        @data[0][0...len] = meta.data[0]
 
       else
-        new_data = new_data.to_hash.merge meta.data[0].to_hash
+        @data[0] = @data[0].to_hash.merge meta.data[0].to_hash
       end
 
-      self.class.new_from [new_data, @data[1]]
+      self
     end
 
 
@@ -128,35 +148,6 @@ class Chub
 
 
     ##
-    # Returns the original object that metadata was assigned to.
-
-    def value
-      data_value = nil
-
-      case @data[0]
-      when Hash
-        data_value = {}
-        @data[0].each do |key, val|
-          child = self.class.new_from val
-          data_value[key] = child.value
-        end
-
-      when Array
-        data_value = []
-        @data[0].each do |val|
-          child = self.class.new_from val
-          data_value << child.value
-        end
-
-      else
-        data_value = @data[0]
-      end
-
-      data_value
-    end
-
-
-    ##
     # Assigns val to the given key, with optional metadata. If no metadata is
     # given and value is not a Meta object, uses the root meta.
 
@@ -164,8 +155,9 @@ class Chub
       if self.class === val && meta.nil?
         val = val.marshal
       else
-        val = val.value if self.class === val
-        val = self.class.assign_meta val, @data[1]
+        val    = val.value if self.class === val
+        meta ||= @data[1]
+        val    = self.class.assign_meta val, meta
       end
 
       @data[0][key] = val
@@ -216,12 +208,7 @@ class Chub
     #   m = Meta.new :foo => "one", :bar => [3,2,1]
     #   m.set_path! [:foo, :new], "newval"
     #   m.value
-    #   #=> {:foo => {:new =      if self.class === val && meta.nil?
-        val = val.marshal
-      else
-        val = val.value if self.class === val
-        val = self.class.assign_meta val, @data[1]
-      end> "newval"}, :bar => [3, 2, 1]}
+    #   #=> {:foo => {:new => "newval"}, :bar => [3, 2, 1]}
     #
     #   m = Meta.new :foo => "one", :bar => [3, 2, 1]
     #   m.set_path! [:bar, :new], "newval"
@@ -254,6 +241,35 @@ class Chub
       end
 
       prev_data[0][prev_key] = self.class.assign_meta val, meta || @data[1]
+    end
+
+
+    ##
+    # Returns the original object that metadata was assigned to.
+
+    def value
+      data_value = nil
+
+      case @data[0]
+      when Hash
+        data_value = {}
+        @data[0].each do |key, val|
+          child = self.class.new_from val
+          data_value[key] = child.value
+        end
+
+      when Array
+        data_value = []
+        @data[0].each do |val|
+          child = self.class.new_from val
+          data_value << child.value
+        end
+
+      else
+        data_value = @data[0]
+      end
+
+      data_value
     end
   end
 end

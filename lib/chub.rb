@@ -54,6 +54,10 @@ class Chub
   require 'chub/meta_hash'
   require 'chub/data_blamer'
 
+  require 'chub/pathed_data'
+
+  require 'chub/meta'
+
   require 'chub/diff'
   require 'chub/blamer'
   require 'chub/app_config'
