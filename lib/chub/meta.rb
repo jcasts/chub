@@ -85,6 +85,27 @@ class Chub
 
 
     ##
+    # Outputs a data structure representation of the meta instance.
+
+    def marshal
+      @data.dup
+    end
+
+
+    ##
+    # Merges a Meta object with this one and returns a new Meta object.
+
+    def merge meta_obj
+      raise ArgumentError,
+        "Expected type #{self.class} but got #{meta_obj.class}" unless
+          self.class === meta_obj
+
+      # TODO: implement merge!
+
+    end
+
+
+    ##
     # Returns the meta data for this object.
 
     def metadata
@@ -159,11 +180,12 @@ class Chub
         prev_key  = k
       end
 
-      prev_data[0][prev_key] = val
+      prev_data[0][prev_key] = self.class.assign_meta val, meta || @data[1]
 
     rescue TypeError => e
       raise unless e.message =~ /can't convert String into Integer/
-      raise TypeError, "Invalid key type '#{prev_key}' for path #{path.inspect}"
+      raise TypeError,
+        "Invalid key type #{prev_key.inspect} for path #{path.inspect}"
     end
 
 
@@ -180,7 +202,12 @@ class Chub
     #   m = Meta.new :foo => "one", :bar => [3,2,1]
     #   m.set_path! [:foo, :new], "newval"
     #   m.value
-    #   #=> {:foo => {:new => "newval"}, :bar => [3, 2, 1]}
+    #   #=> {:foo => {:new =      if self.class === val && meta.nil?
+        val = val.marshal
+      else
+        val = val.value if self.class === val
+        val = self.class.assign_meta val, @data[1]
+      end> "newval"}, :bar => [3, 2, 1]}
     #
     #   m = Meta.new :foo => "one", :bar => [3, 2, 1]
     #   m.set_path! [:bar, :new], "newval"
@@ -205,27 +232,14 @@ class Chub
         prev_key  = k
       end
 
-      prev_data[0][prev_key] = val
-    end
+      if self.class === val && meta.nil?
+        val = val.marshal
+      else
+        val = val.value if self.class === val
+        val = self.class.assign_meta val, @data[1]
+      end
 
-
-    ##
-    # Merges a Meta object with this one and returns a new Meta object.
-
-    def merge meta_obj
-      raise ArgumentError,
-        "Expected type #{self.class} but got #{meta_obj.class}" unless
-          self.class === meta_obj
-
-      # TODO: implement merge!
-    end
-
-
-    ##
-    # Outputs a data structure representation of the meta instance.
-
-    def marshal
-      @data.dup
+      prev_data[0][prev_key] = self.class.assign_meta val, meta || @data[1]
     end
   end
 end
