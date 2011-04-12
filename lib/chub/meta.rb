@@ -61,7 +61,7 @@ class Chub
 
     def [] key
       if Hash === @data[0] && @data[0].has_key?(key) ||
-         Array === @data[0] && key < @data[0].length
+         Array === @data[0] && Fixnum === key && key < @data[0].length
 
         self.class.new_from @data[0][key]
       end
@@ -172,26 +172,20 @@ class Chub
     # datatype (e.g. using a String as an Array index).
 
     def set_path path, val, meta=nil
-      curr_data = @data
-      prev_data = nil
       prev_key  = nil
 
-      path.each do |k|
+      set_path! path, val, meta do |curr_data, pk|
+        prev_key = pk
+
         raise InvalidPathError,
-          "No such path #{path.inspect} at '#{prev_key}'" unless
-            Hash === curr_data[0] || Array === curr_data[0]
-
-        prev_data = curr_data
-        curr_data = curr_data[0][k]
-        prev_key  = k
+          "No such path #{path.inspect} at '#{prev_key}'" unless curr_data &&
+            (Hash === curr_data[0] || Array === curr_data[0])
       end
-
-      prev_data[0][prev_key] = self.class.assign_meta val, meta || @data[1]
 
     rescue TypeError => e
       raise unless e.message =~ /can't convert String into Integer/
       raise TypeError,
-        "Invalid key type #{prev_key.inspect} for path #{path.inspect}"
+        "Expected Integer in path #{path.inspect} at #{prev_key.inspect}"
     end
 
 
@@ -216,31 +210,37 @@ class Chub
     #   #=> {:foo => "one", :bar => {0 => 3, 1 => 2, 2 => 1, :new => "newval"}}
 
     def set_path! path, val, meta=nil
+      meta    ||= @data[1]
       curr_data = @data
       prev_data = nil
       prev_key  = nil
 
       path.each do |k|
-        if Array === curr_data[0] && !(Fixnum === k)
-          curr_data[0] = curr_data[0].to_hash
+        if block_given?
+          yield curr_data, prev_key
 
-        elsif !(Hash === curr_data[0]) && !(Array === curr_data[0])
-          curr_data[0] = Fixnum === k ? Array.new : Hash.new
+        else
+          if Array === curr_data[0] && !(Integer === k)
+            curr_data[0] = curr_data[0].to_hash
+
+          elsif !(Hash === curr_data[0]) && !(Array === curr_data[0])
+            curr_data[0] = Integer === k ? Array.new(k, [nil, meta]) : Hash.new
+          end
         end
 
         prev_data = curr_data
-        curr_data = curr_data[0][k]
         prev_key  = k
+        curr_data = curr_data[0][k]
       end
 
       if self.class === val && meta.nil?
         val = val.marshal
       else
         val = val.value if self.class === val
-        val = self.class.assign_meta val, @data[1]
+        val = self.class.assign_meta val, meta
       end
 
-      prev_data[0][prev_key] = self.class.assign_meta val, meta || @data[1]
+      prev_data[0][prev_key] = val
     end
 
 
