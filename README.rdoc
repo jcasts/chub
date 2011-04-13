@@ -46,9 +46,9 @@ Delete a config value:
 
   $ chub app/dev:path/to/key -d
 
-View inheritance info in config:
+View blame info in config:
 
-  $ chub app/dev -i
+  $ chub app/dev -b
 
 Add a config inheritance:
 
