@@ -138,7 +138,8 @@ class Chub
     # Passing history an integer will limit the number of revisions.
 
     def blame
-      self.document
+      self.document.stringify do |meta|
+      end
     end
 
 
