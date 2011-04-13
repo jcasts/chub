@@ -119,9 +119,9 @@ class Chub
     # Returns the fully merged config document with recursively added includes.
 
     def document
-      return self.data if self.includes.empty?
+      doc = Meta.new_from data
 
-      doc = self.data.dup || Hash.new
+      return doc if self.includes.empty?
 
       doc_includes = self.class.active.any_in :name => self.includes
 
@@ -137,20 +137,8 @@ class Chub
     # Returns a blamed string output.
     # Passing history an integer will limit the number of revisions.
 
-    def blame lim=nil
-      revs = self.class.
-               where(:name => self.name).
-               order_by(:updated_at.desc).
-               limit(lim).to_a
-
-      revs.map! do |ac|
-        {
-          :data => ac,
-          :meta => [ac.rev[0,8], ac.name, ac.updated_at.to_s]
-        }
-      end
-
-      Blamer.new_from_data(*revs).formatted(!lim.nil?)
+    def blame
+      self.document
     end
 
 
