@@ -49,8 +49,6 @@ class Chub
     end
   end
 
-  require 'chub/pathed_data'
-
   require 'chub/document'
   require 'chub/app_config'
 end

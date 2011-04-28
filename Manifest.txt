@@ -5,4 +5,6 @@ README.txt
 Rakefile
 bin/chub
 lib/chub.rb
+lib/chub/app_config.rb
+lib/chub/document.rb
 test/test_chub.rb
