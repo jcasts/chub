@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class TestMeta < Test::Unit::TestCase
+class TestDocument < Test::Unit::TestCase
 
   def setup
     @metadata = {:user => "bob"}
@@ -31,42 +31,42 @@ class TestMeta < Test::Unit::TestCase
       @metadata
     ]
 
-    @meta = Chub::Meta.new_from @marshalled
+    @meta = Chub::Document.new_from @marshalled
   end
 
 
   def test_new_from
-    meta = Chub::Meta.new_from @marshalled
+    meta = Chub::Document.new_from @marshalled
     assert_equal @marshalled, meta.data
   end
 
 
   def test_new
-    meta = Chub::Meta.new @data, @metadata
+    meta = Chub::Document.new @data, @metadata
     assert_equal @marshalled, meta.data
   end
 
 
   def test_marshal
-    meta = Chub::Meta.new @data, @metadata
+    meta = Chub::Document.new @data, @metadata
     assert_equal @marshalled, meta.marshal
   end
 
 
   def test_metadata
-    meta = Chub::Meta.new @data, @metadata
+    meta = Chub::Document.new @data, @metadata
     assert_equal @metadata, meta.metadata
   end
 
 
   def test_assign_meta
-    meta = Chub::Meta.assign_meta @data, @metadata
+    meta = Chub::Document.assign_meta @data, @metadata
     assert_equal @marshalled, meta
   end
 
 
   def test_bracket
-    assert Chub::Meta === @meta[:foo]
+    assert Chub::Document === @meta[:foo]
     assert_equal 'bar', @meta[:foo].value
     assert_equal 'thing', @meta[:hsh][:sub]['b'][1].value
   end
@@ -94,7 +94,8 @@ class TestMeta < Test::Unit::TestCase
 
   def test_each_hash
     @meta.each do |key, val|
-      assert Chub::Meta === val, "Value at #{key.inspect} was not a Meta object"
+      assert Chub::Document === val,
+        "Value at #{key.inspect} was not a Document object"
       assert_equal val.value, @meta[key].value
     end
   end
@@ -102,7 +103,8 @@ class TestMeta < Test::Unit::TestCase
 
   def test_each_array
     @meta[:arr].each do |key, val|
-      assert Chub::Meta === val, "Value at #{key.inspect} was not a Meta object"
+      assert Chub::Document === val,
+        "Value at #{key.inspect} was not a Document object"
       assert_equal val.value, @meta[:arr][key].value
     end
   end
@@ -119,7 +121,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_hashes
     metadata = {:user => "jen"}
     data = {:foo => "foobar", :test => "thing"}
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     new_meta = @meta.merge meta1
 
@@ -137,7 +139,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_arrays
     metadata = {:user => "jen"}
     data = [:one, :two]
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta[:arr].merge! meta1
 
@@ -153,7 +155,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_hash_array
     metadata = {:user => "jen"}
     data = {:one => "a", :two => "b"}
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     new_meta = @meta[:arr].merge meta1
     assert_not_equal @meta[:arr].value, new_meta.value
@@ -174,7 +176,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_array_hash
     metadata = {:user => "jen"}
     data = [:one, :two]
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta[:hsh].merge! meta1
 
@@ -192,7 +194,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_invalid_left
     metadata = {:user => "jen"}
     data = [:one, :two]
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta[:foo].merge! meta1
 
@@ -204,7 +206,7 @@ class TestMeta < Test::Unit::TestCase
   def test_merge_invalid_right
     metadata = {:user => "jen"}
     data = "thing"
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta[:arr].merge! meta1
 
@@ -215,7 +217,7 @@ class TestMeta < Test::Unit::TestCase
 
   def test_value
     assert_equal @data, @meta.value
-    assert_equal @data, Chub::Meta.new(@data, "stuff").value
+    assert_equal @data, Chub::Document.new(@data, "stuff").value
   end
 
 
@@ -240,7 +242,7 @@ class TestMeta < Test::Unit::TestCase
   def test_set_to_meta
     metadata = {:user => "jen"}
     data = "thing"
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta.set :hsh, meta1
 
@@ -252,7 +254,7 @@ class TestMeta < Test::Unit::TestCase
   def test_set_to_meta_with_metadata
     metadata = {:user => "jen"}
     data = "thing"
-    meta1 = Chub::Meta.new data, metadata
+    meta1 = Chub::Document.new data, metadata
 
     @meta.set :hsh, meta1, :user => "lyn"
 
@@ -302,7 +304,7 @@ class TestMeta < Test::Unit::TestCase
 
 
   def test_set_path_invalid
-    assert_raises Chub::Meta::InvalidPathError do
+    assert_raises Chub::Document::InvalidPathError do
       @meta.set_path [0,0,0], "OOPS"
     end
 

@@ -119,7 +119,7 @@ class Chub
     # Returns the fully merged config document with recursively added includes.
 
     def document
-      doc = Meta.new_from data
+      doc = Document.new_from data
 
       return doc if self.includes.empty?
 

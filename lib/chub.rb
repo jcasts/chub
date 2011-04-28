@@ -56,7 +56,7 @@ class Chub
 
   require 'chub/pathed_data'
 
-  require 'chub/meta'
+  require 'chub/document'
 
   require 'chub/diff'
   require 'chub/blamer'

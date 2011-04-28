@@ -1,11 +1,11 @@
 class Chub
 
-  class Meta
+  class Document
 
     class InvalidPathError < Exception; end
 
     ##
-    # Creates a new Meta object from a marshalled data structure.
+    # Creates a new Document object from a marshalled data structure.
 
     def self.new_from data
       inst = self.new
@@ -16,7 +16,7 @@ class Chub
 
     ##
     # Recursively assigns the meta data to the data object by building a
-    # marshalled Meta data structure.
+    # marshalled Document data structure.
 
     def self.assign_meta data, meta
       new_data = nil
@@ -46,8 +46,8 @@ class Chub
 
 
     ##
-    # Builds a new Meta object from the given data structure and meta info.
-    # Meta data structure follows this format where data_item is any
+    # Builds a new Document object from the given data structure and meta info.
+    # Document data structure follows this format where data_item is any
     # data structure. Each child element of data_item gets assigned meta data.
     #   [data_item, meta_data]
 
@@ -78,7 +78,7 @@ class Chub
 
 
     ##
-    # Iterates over each data item and yields a Meta instance.
+    # Iterates over each data item and yields a Document instance.
 
     def each &block
       case @data[0]
@@ -107,8 +107,8 @@ class Chub
 
 
     ##
-    # Merges a Meta object with this one and returns a new Meta object.
-    # Merge will fail and return self if either Meta object's root data
+    # Merges a Document object with this one and returns a new Document object.
+    # Merge will fail and return self if either Document object's root data
     # is not an Array or Hash.
 
     def merge meta
@@ -117,7 +117,7 @@ class Chub
 
 
     ##
-    # Same as Meta#merge but modifies the Meta instance.
+    # Same as Document#merge but modifies the Document instance.
 
     def merge! meta
       raise ArgumentError,
@@ -149,7 +149,7 @@ class Chub
 
     ##
     # Assigns val to the given key, with optional metadata. If no metadata is
-    # given and value is not a Meta object, uses the root meta.
+    # given and value is not a Document object, uses the root meta.
 
     def set key, val, meta=nil
       if self.class === val && meta.nil?
@@ -190,21 +190,21 @@ class Chub
 
 
     ##
-    # Acts like Meta#set_path but will create or modify the necessary data
+    # Acts like Document#set_path but will create or modify the necessary data
     # structures to accomodate missing path items
     # (Arrays for numbers, otherwise Hashes).
     #
-    #   m = Meta.new :foo => "one", :bar => [3,2,1]
+    #   m = Document.new :foo => "one", :bar => [3,2,1]
     #   m.set_path! [:bar, 5, :new], "newval"
     #   m.value
     #   #=> {:foo => "one", :bar => [3, 2, 1, nil, nil, {:new => "newval"}]}
     #
-    #   m = Meta.new :foo => "one", :bar => [3,2,1]
+    #   m = Document.new :foo => "one", :bar => [3,2,1]
     #   m.set_path! [:foo, :new], "newval"
     #   m.value
     #   #=> {:foo => {:new => "newval"}, :bar => [3, 2, 1]}
     #
-    #   m = Meta.new :foo => "one", :bar => [3, 2, 1]
+    #   m = Document.new :foo => "one", :bar => [3, 2, 1]
     #   m.set_path! [:bar, :new], "newval"
     #   m.value
     #   #=> {:foo => "one", :bar => {0 => 3, 1 => 2, 2 => 1, :new => "newval"}}
