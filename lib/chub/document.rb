@@ -245,6 +245,89 @@ class Chub
 
 
     ##
+    # Returns a string representation of the data. Will pass the metadata for a
+    # given line to a block when passed, and use the return
+    # value as left columns meta.
+
+    def stringify &columns
+      rows = self.to_columns(&columns)
+
+      cols_w = []
+
+      rows.each do |cols|
+        cols[0...-1].each_with_index do |val, i|
+          cols_w[i] = val.length if cols_w[i].to_i < val.length
+        end
+      end
+
+      out = ""
+
+      rows.map do |cols|
+        cols.each_with_index do |val, i|
+          out << val.ljust(cols_w[i].to_i)
+        end
+
+        out << $/
+      end
+
+      out
+    end
+
+
+    ##
+    # Returns rows and columns representing the stringified data.
+
+    def to_columns out=[], indent=0, prefix="", &columns
+      cols_w    = []
+      columns ||= lambda{|meta, line_num, line| [line]}
+
+      case @data[0]
+
+      when Array
+        if out.last === Array
+          out.last.last << "#{prefix}["
+        else
+          append_row out, "#{prefix}[", indent, &columns
+        end
+
+        self.each do |key, doc|
+          doc.to_columns(out, indent+1, &columns)
+        end
+
+        append_row out, "]", indent, &columns
+
+      when Hash
+        if out.last === Array
+          out.last.last << "#{prefix}{"
+        else
+          append_row out, "#{prefix}{", indent, &columns
+        end
+
+        self.each do |key, doc|
+          doc.to_columns(out, indent+1, "#{key.inspect} => ", &columns)
+        end
+
+        append_row out, "}", indent, &columns
+
+      else
+        append_row out, "#{prefix}#{self.value.inspect}", indent, &columns
+      end
+
+      out
+    end
+
+
+    ##
+    # Appends a row to the columnized output.
+
+    def append_row out, str, indent=0, &columns
+      str = "#{" " * indent}#{str}"
+      out << columns.call(self.metadata, out.length + 1, str).to_a
+      out
+    end
+
+
+    ##
     # Returns the original object that metadata was assigned to.
 
     def value

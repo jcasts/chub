@@ -8,3 +8,5 @@ lib/chub.rb
 lib/chub/app_config.rb
 lib/chub/document.rb
 test/test_chub.rb
+test/test_document.rb
+test/test_helper.rb

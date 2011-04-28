@@ -373,4 +373,15 @@ class TestDocument < Test::Unit::TestCase
     assert_equal({:bar => "foobar"}, @meta[:foo].value)
     assert_equal "lyn", @meta[:foo][:bar].metadata[:user]
   end
+
+
+  def test_to_columns
+    puts "\n"
+    puts @meta.stringify do |meta, line_num, line|
+        [ "(#{meta[:user]}",
+          "#{line_num})",
+          line
+        ]
+      end
+  end
 end

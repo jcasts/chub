@@ -72,20 +72,49 @@ class Chub
 
     ##
     # Creates and saves a new revision as a child of this instance.
+    # Options supported are :timestamp and :user.
 
-    def create_rev new_data={}
-      new_data   = self.data.merge(new_data)
-      app_config = self.class.new :name     => self.name,
-                                  :data     => new_data,
-                                  :includes => self.includes
+    def create_rev new_data={}, options={}
+      options[:timestamp] ||= Time.now
+      options[:user]      ||= Chub.config['user']
+      options[:file]        = self.name
+
+      new_doc = Document.new new_data, options.dup
+      new_doc = self.document.merge new_doc
+
+      app_config =
+        self.class.new :name       => self.name,
+                       :data       => new_doc.value,
+                       :includes   => self.includes,
+                       :updated_at => options[:timestamp],
+                       :updated_by => options[:user]
 
       app_config.previous = self
+
+      app_config.data[1][:revision]  = app_config.assign_rev
+
       app_config.save!
 
       self.active = false
       self.save!
 
       app_config
+    end
+
+
+    ##
+    # Returns true if this instance is the currently used revision.
+
+    def current?
+      self.rev == self.class.current(self.name).rev
+    end
+
+
+    ##
+    # Returns true if this instance is the most recent revision.
+
+    def latest?
+      self.rev == self.class.latest(self.name).rev
     end
 
 
@@ -119,6 +148,8 @@ class Chub
     # Returns the fully merged config document with recursively added includes.
 
     def document
+      return @document if @document && self.current?
+
       doc = Document.new_from data
 
       return doc if self.includes.empty?
@@ -129,7 +160,7 @@ class Chub
         doc = incl.document.merge doc
       end
 
-      doc
+      @document = doc
     end
 
 
@@ -138,12 +169,17 @@ class Chub
     # Passing history an integer will limit the number of revisions.
 
     def blame
-      self.document.stringify do |meta|
+      self.document.stringify do |meta, line_num, line|
+        [
+          meta[:file],
+          meta[:revision].split("-").first,
+          "(#{meta[:user]}",
+          meta[:timestamp].strftime("%Y-%m-%d %H:%M:%S %z"),
+          "#{line_num})",
+          line
+        ]
       end
     end
-
-
-    protected
 
 
     def assign_rev
