@@ -112,7 +112,8 @@ class Chub
     # is not an Array or Hash.
 
     def merge meta
-      self.class.new_from([@data[0].dup, @data[1]]).merge! meta
+      new_data = @data[0].dup rescue @data[0]
+      self.class.new_from([new_data, @data[1]]).merge! meta
     end
 
 
@@ -256,15 +257,16 @@ class Chub
 
       rows.each do |cols|
         cols[0...-1].each_with_index do |val, i|
-          cols_w[i] = val.length if cols_w[i].to_i < val.length
+          cols_w[i] = val.to_s.length if cols_w[i].to_i < val.to_s.length
         end
       end
 
       out = ""
 
-      rows.map do |cols|
+      rows.each do |cols|
         cols.each_with_index do |val, i|
-          out << val.ljust(cols_w[i].to_i)
+          meth = Fixnum === val ? :rjust : :ljust
+          out << val.to_s.send(meth, cols_w[i].to_i)
         end
 
         out << $/
@@ -285,29 +287,25 @@ class Chub
 
       when Array
         if out.last === Array
-          out.last.last << "#{prefix}["
-        else
-          append_row out, "#{prefix}[", indent, &columns
+          out.last.last << prefix
+        elsif !prefix.empty?
+          append_row out, prefix, indent, &columns
         end
 
         self.each do |key, doc|
-          doc.to_columns(out, indent+1, &columns)
+          doc.to_columns(out, indent+1, "[#{key}] ", &columns)
         end
-
-        append_row out, "]", indent, &columns
 
       when Hash
         if out.last === Array
-          out.last.last << "#{prefix}{"
-        else
-          append_row out, "#{prefix}{", indent, &columns
+          out.last.last << prefix
+        elsif !prefix.empty?
+          append_row out, prefix, indent, &columns
         end
 
         self.each do |key, doc|
-          doc.to_columns(out, indent+1, "#{key.inspect} => ", &columns)
+          doc.to_columns(out, indent+1, "#{key}: ", &columns)
         end
-
-        append_row out, "}", indent, &columns
 
       else
         append_row out, "#{prefix}#{self.value.inspect}", indent, &columns

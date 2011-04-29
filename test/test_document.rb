@@ -375,13 +375,100 @@ class TestDocument < Test::Unit::TestCase
   end
 
 
+  def test_append_row
+    arr = [1,2,3]
+    @meta.append_row arr, "test", 1 do |meta, line_num, str|
+      [meta, line_num, str]
+    end
+
+    assert_equal [1,2,3,[@meta.metadata, 4, " test"]], arr
+  end
+
+
   def test_to_columns
-    puts "\n"
-    puts @meta.stringify do |meta, line_num, line|
-        [ "(#{meta[:user]}",
-          "#{line_num})",
-          line
-        ]
-      end
+    rows = @meta.to_columns{|meta, line_num, line|
+      ["(#{meta[:user]} ", line_num, ") ", line]
+    }
+
+    expected = [
+      ["(bob ", 1, ") ", " foo: \"bar\""],
+      ["(bob ", 2, ") ", " arr: "],
+      ["(bob ", 3, ") ", "  [0] \"a\""],
+      ["(bob ", 4, ") ", "  [1] \"b\""],
+      ["(bob ", 5, ") ", "  [2] \"c\""],
+      ["(bob ", 6, ") ", " hsh: "],
+      ["(bob ", 7, ") ", "  sub: "],
+      ["(bob ", 8, ") ", "   a: 1"],
+      ["(bob ", 9, ") ", "   b: "],
+      ["(bob ", 10, ") ", "    [0] \"test\""],
+      ["(bob ", 11, ") ", "    [1] \"thing\""]
+    ]
+
+    assert_equal expected, rows
+  end
+
+
+  def test_to_columns_no_block
+    rows = @meta.to_columns
+
+    expected = [
+      [" foo: \"bar\""],
+      [" arr: "],
+      ["  [0] \"a\""],
+      ["  [1] \"b\""],
+      ["  [2] \"c\""],
+      [" hsh: "],
+      ["  sub: "],
+      ["   a: 1"],
+      ["   b: "],
+      ["    [0] \"test\""],
+      ["    [1] \"thing\""]
+    ]
+
+    assert_equal expected, rows
+  end
+
+
+  def test_stringify
+    out = @meta.stringify{|meta, line_num, line|
+      ["(#{meta[:user]} ", line_num, ") ", line]
+    }
+
+    expected = <<-STR
+(bob  1)  foo: "bar"
+(bob  2)  arr: 
+(bob  3)   [0] "a"
+(bob  4)   [1] "b"
+(bob  5)   [2] "c"
+(bob  6)  hsh: 
+(bob  7)   sub: 
+(bob  8)    a: 1
+(bob  9)    b: 
+(bob 10)     [0] "test"
+(bob 11)     [1] "thing"
+    STR
+
+    assert_equal expected, out
+  end
+
+
+  def test_stringify_no_block
+    out = @meta.stringify
+
+    expected = <<-STR
+ foo: "bar"
+ arr: 
+  [0] "a"
+  [1] "b"
+  [2] "c"
+ hsh: 
+  sub: 
+   a: 1
+   b: 
+    [0] "test"
+    [1] "thing"
+    STR
+
+    assert_equal expected, out
   end
 end
