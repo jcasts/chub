@@ -67,53 +67,57 @@ class Chub
 
     ##
     # Create a new revision of the document
-    # based on the currently active AppConfig.
+    # based on the currently active AppConfig or the revision specified in
+    # the options with :from_rev.
+    # Options supported are :from_rev, 'timestamp' and 'user'.
 
     def self.create_rev name, new_data={}, options={}
-      app_config = current(name)
+      options  = options.dup
+      from_rev = options.delete :from_rev
 
-      if app_config
-        app_config.create_rev new_data, options
+      prev_config =
+        from_rev ? revision(name, from_rev) : current(name)
 
-      else
-        app_config = self.new :name => name, :active => false
-        app_config.create_rev new_data
+      options['timestamp'] ||= Time.now
+      options['user']      ||= Chub.config['user']
+      options['file']        = name
+      options['revision']    = UUID.generate
+
+      new_doc = Document.new new_data, options
+
+      app_config =
+        self.new :name       => options['file'],
+                 :created_at => options['timestamp'],
+                 :updated_by => options['user'],
+                 :rev        => options['revision']
+
+      if prev_config
+        new_doc = prev_config.document.merge new_doc if prev_config.document
+
+        if prev_config.active?
+          prev_config.active = false
+          prev_config.save!
+        end
+
+        app_config.previous = prev_config
+        app_config.includes = prev_config.includes.dup
       end
+
+      app_config.data = new_doc.data
+
+      app_config.save!
+      app_config
     end
 
 
     ##
     # Creates and saves a new revision as a child of this instance.
-    # Options supported are :timestamp and :user.
+    # Options supported are 'timestamp' and 'user'.
 
     def create_rev new_data={}, options={}
-      options[:timestamp] ||= Time.now
-      options[:user]      ||= Chub.config['user']
-      options[:file]        = self.name
-      options[:revision]    = UUID.generate
-
-      new_doc = Document.new new_data, options.dup
-      new_doc = self.document.merge new_doc if self.document
-
-      app_config =
-        self.class.new :name       => self.name,
-                       :data       => new_doc.data,
-                       :includes   => self.includes,
-                       :created_at => options[:timestamp],
-                       :updated_by => options[:user],
-                       :rev        => options[:revision]
-
-      app_config.previous = self
-
-      app_config.save!
-
-
-      if self.active?
-        self.active = false
-        self.save!
-      end
-
-      app_config
+      self.class.create_rev self.name,
+                            new_data,
+                            options.merge(:from_rev => self.rev)
     end
 
 
@@ -185,13 +189,11 @@ class Chub
     # Passing history an integer will limit the number of revisions.
 
     def blame
-      short_rev = self.rev.split("-").first
-
-      "[#{self.name} #{short_rev}]\n\n" +
+      "[#{self.name} #{self.rev.split("-").first}]\n\n" +
       self.document.stringify do |meta, line_num, line|
         [
           meta['file'], " ",
-          short_rev, " ",
+          meta['revision'].split("-").first, " ",
           "(#{meta['user']}", " ",
           meta['timestamp'].strftime("%Y-%m-%d %H:%M:%S %z"), " ",
           "#{line_num})",

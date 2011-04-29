@@ -111,29 +111,29 @@ class Chub
     # Merge will fail and return self if either Document object's root data
     # is not an Array or Hash.
 
-    def merge meta
+    def merge doc
       new_data = @data[0].dup rescue @data[0]
-      self.class.new_from([new_data, @data[1]]).merge! meta
+      self.class.new_from([new_data, @data[1]]).merge! doc
     end
 
 
     ##
     # Same as Document#merge but modifies the Document instance.
 
-    def merge! meta
+    def merge! doc
       raise ArgumentError,
-        "Expected type #{self.class} but got #{meta.class}" unless
-          self.class === meta
+        "Expected type #{self.class} but got #{doc.class}" unless
+          self.class === doc
 
       return self unless (Array === @data[0] || Hash === @data[0]) &&
-                         (Array === meta.data[0] || Hash === meta.data[0])
+                         (Array === doc.data[0] || Hash === doc.data[0])
 
-      if Array === @data[0] && Array === meta.data[0]
-        len = meta.data[0].length
-        @data[0][0...len] = meta.data[0]
+      if Array === @data[0] && Array === doc.data[0]
+        len = doc.data[0].length
+        @data[0][0...len] = doc.data[0]
 
       else
-        @data[0] = @data[0].to_hash.merge meta.data[0].to_hash
+        @data[0] = @data[0].to_hash.merge doc.data[0].to_hash
       end
 
       self
