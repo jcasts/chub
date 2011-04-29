@@ -6,11 +6,12 @@ class Chub
     attr_writer :previous
 
     field :name
-    field :data, :type => Hash
+    field :data, :type => Array
     field :rev,  :uniq => true
     field :prev_rev
 
     field :updated_by, :default => Chub.config['user']
+    field :created_at, :default => Time.now,  :type => Time
     field :updated_at, :default => Time.now,  :type => Time
     field :includes,   :default => Array.new, :type => Array
     field :active,     :default => true,      :type => Boolean
@@ -19,11 +20,12 @@ class Chub
     before_validation :assign_rev
     before_update :set_time_and_user
 
-    validates_presence_of :name, :rev, :updated_by, :updated_at
+    validates_presence_of :name, :rev, :updated_by, :updated_at, :created_at
 
     scope :active, :where => { :active => true }
 
-    attr_accessible :name, :data, :updated_by, :includes
+    attr_accessible :active, :name, :data, :updated_by,
+                    :includes, :rev, :created_at
 
 
     ##
@@ -40,10 +42,9 @@ class Chub
     # If a revision (or its first few characters) is given, will return
     # the latest app_config with that matches it.
 
-    def self.latest name, rev=nil
+    def self.latest name
       conditions = {:name => name}
-      conditions[:rev] =  /^#{rev}/ if rev
-      self.where(conditions).order_by(:updated_at.asc).limit(1).first
+      self.where(conditions).order_by(:created_at.desc).limit(1).first
     end
 
 
@@ -56,16 +57,27 @@ class Chub
 
 
     ##
+    # Returns the AppConfig instance with the given name and revision.
+
+    def self.revision name, rev
+      conditions = {:name => name, :rev => /^#{rev}/}
+      self.where(conditions).first
+    end
+
+
+    ##
     # Create a new revision of the document
     # based on the currently active AppConfig.
 
-    def self.create_rev name, new_data={}
+    def self.create_rev name, new_data={}, options={}
       app_config = current(name)
 
       if app_config
-        app_config.create_rev new_data
+        app_config.create_rev new_data, options
+
       else
-        self.create :name => name, :data => new_data
+        app_config = self.new :name => name, :active => false
+        app_config.create_rev new_data
       end
     end
 
@@ -78,25 +90,28 @@ class Chub
       options[:timestamp] ||= Time.now
       options[:user]      ||= Chub.config['user']
       options[:file]        = self.name
+      options[:revision]    = UUID.generate
 
       new_doc = Document.new new_data, options.dup
-      new_doc = self.document.merge new_doc
+      new_doc = self.document.merge new_doc if self.document
 
       app_config =
         self.class.new :name       => self.name,
-                       :data       => new_doc.value,
+                       :data       => new_doc.data,
                        :includes   => self.includes,
-                       :updated_at => options[:timestamp],
-                       :updated_by => options[:user]
+                       :created_at => options[:timestamp],
+                       :updated_by => options[:user],
+                       :rev        => options[:revision]
 
       app_config.previous = self
 
-      app_config.data[1][:revision]  = app_config.assign_rev
-
       app_config.save!
 
-      self.active = false
-      self.save!
+
+      if self.active?
+        self.active = false
+        self.save!
+      end
 
       app_config
     end
@@ -148,9 +163,10 @@ class Chub
     # Returns the fully merged config document with recursively added includes.
 
     def document
+      return unless self.data
       return @document if @document && self.current?
 
-      doc = Document.new_from data
+      doc = Document.new_from self.data
 
       return doc if self.includes.empty?
 
@@ -169,12 +185,15 @@ class Chub
     # Passing history an integer will limit the number of revisions.
 
     def blame
+      short_rev = self.rev.split("-").first
+
+      "[#{self.name} #{short_rev}]\n\n" +
       self.document.stringify do |meta, line_num, line|
         [
-          meta[:file],
-          meta[:revision].split("-").first,
-          "(#{meta[:user]}",
-          meta[:timestamp].strftime("%Y-%m-%d %H:%M:%S %z"),
+          meta['file'], " ",
+          short_rev, " ",
+          "(#{meta['user']}", " ",
+          meta['timestamp'].strftime("%Y-%m-%d %H:%M:%S %z"), " ",
           "#{line_num})",
           line
         ]
