@@ -29,11 +29,12 @@ class Chub
 
 
     ##
-    # Return the specified app_config document with recursively added includes.
+    # Return the specified app_config document value
+    # with recursively added includes.
 
     def self.read name
       app_config = current(name)
-      app_config && app_config.document
+      app_config && app_config.document && app_config.full_document.value
     end
 
 
@@ -67,15 +68,20 @@ class Chub
 
     ##
     # Create a new revision of the document
-    # based on the currently active AppConfig or the revision specified in
-    # the options with :from_rev.
-    # Options supported are :from_rev, 'timestamp' and 'user'.
+    # based on the currently active AppConfig, the revision specified in
+    # the options with :from_rev, or an actual AppConfig instance given
+    # to the :from option.
+    # Options supported are :from_rev, :from, 'timestamp' and 'user'.
+    #
+    # Warning: If an AppConfig instance is given to :from, it will be used
+    # in its in-memory state and saved to the store as such.
 
-    def self.create_rev name, new_data={}, options={}
-      options  = options.dup
-      from_rev = options.delete :from_rev
+    def self.create_rev name, options={}
+      options     = options.dup
+      prev_config = options.delete :from
+      from_rev    = options.delete :from_rev
 
-      prev_config =
+      prev_config ||=
         from_rev ? revision(name, from_rev) : current(name)
 
       options['timestamp'] ||= Time.now
@@ -83,7 +89,7 @@ class Chub
       options['file']        = name
       options['revision']    = UUID.generate
 
-      new_doc = Document.new new_data, options
+      new_doc = Document.new Hash.new, options
 
       app_config =
         self.new :name       => options['file'],
@@ -92,7 +98,7 @@ class Chub
                  :rev        => options['revision']
 
       if prev_config
-        new_doc = prev_config.document.merge new_doc if prev_config.document
+        new_doc = prev_config.document.dup if prev_config.document
 
         if prev_config.active?
           prev_config.active = false
@@ -114,10 +120,8 @@ class Chub
     # Creates and saves a new revision as a child of this instance.
     # Options supported are 'timestamp' and 'user'.
 
-    def create_rev new_data={}, options={}
-      self.class.create_rev self.name,
-                            new_data,
-                            options.merge(:from_rev => self.rev)
+    def create_rev options={}
+      self.class.create_rev self.name, options.merge(:from => self)
     end
 
 
@@ -166,21 +170,52 @@ class Chub
     ##
     # Returns the fully merged config document with recursively added includes.
 
-    def document
-      return unless self.data
-      return @document if @document && self.current?
-
-      doc = Document.new_from self.data
-
+    def full_document
+      doc = self.document
+      return unless doc
       return doc if self.includes.empty?
 
       doc_includes = self.class.active.any_in :name => self.includes
 
       doc_includes.each do |incl|
-        doc = incl.document.merge doc
+        doc = incl.full_document.merge doc
       end
 
-      @document = doc
+      doc
+    end
+
+
+    ##
+    # Returns the config document without includes.
+
+    def document
+      return unless self.data
+      Document.new_from self.data
+    end
+
+
+    ##
+    # Returns the most up-to-date metadata to use in the document.
+
+    def curr_meta
+      {
+        'timestamp' => self.created_at,
+        'user'      => Chub.config['user'],
+        'file'      => self.name,
+        'revision'  => self.rev
+      }
+    end
+
+
+    ##
+    # Sets data at the given String path. Accepts optional metadata as a Hash
+    # to merge.
+    #   app_config.set_path "path/to/prop", "value", "user" => "joe"
+
+    def set_path path, val, meta={}
+      meta = self.curr_meta.merge meta
+      path = path.split("/").map{|p| p =~ /^\d+$/ ? p.to_i : p}
+      self.document.set_path path, val, meta
     end
 
 
@@ -190,7 +225,7 @@ class Chub
 
     def blame
       "[#{self.name} #{self.rev.split("-").first}]\n\n" +
-      self.document.stringify do |meta, line_num, line|
+      self.full_document.stringify do |meta, line_num, line|
         [
           meta['file'], " ",
           meta['revision'].split("-").first, " ",

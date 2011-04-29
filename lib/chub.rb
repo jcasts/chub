@@ -58,15 +58,22 @@ module MongoSetup
     Chub.configure_mongo
 
     Chub::AppConfig.destroy_all
-    de = Chub::AppConfig.create_rev "app/default", "def1" => "defval1"
-    ac = Chub::AppConfig.create_rev "app/dev", "key1" => "val1"
-    sleep 0.5
-    ac = ac.create_rev "key2" => "val2"
-    sleep 0.5
-    ac.include de
-    ac.save!
+    de = Chub::AppConfig.create_rev "app/default"
+    de.set_path "def1", "defval1"
+    de.save!
 
-    ac = ac.create_rev "key3" => "val3"
+    ac = Chub::AppConfig.create_rev "app/dev"
+    ac.document["key1"] = "val1"
+
+    sleep 0.5
+    ac = ac.create_rev
+    ac.set_path "key2", "val2"
+    ac.include de
+    sleep 0.5
+
+    ac = ac.create_rev
+    ac.set_path "key3", "val3", "user" => "csandiego"
+    ac.save!
   end
 end
 
