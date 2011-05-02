@@ -14,11 +14,14 @@ class Chub
     field :created_at, :default => Time.now,  :type => Time
     field :updated_at, :default => Time.now,  :type => Time
     field :includes,   :default => Array.new, :type => Array
-    field :active,     :default => true,      :type => Boolean
+    field :active,     :default => false,     :type => Boolean
 
-    before_create :assign_previous
     before_validation :assign_rev
+    before_create :assign_previous
     before_update :set_time_and_user
+
+    after_save :ensure_active
+    before_destroy :ensure_active
 
     validates_presence_of :name, :rev, :updated_by, :updated_at, :created_at
 
@@ -53,7 +56,7 @@ class Chub
     # Returns the currently active AppConfig with the given name.
 
     def self.current name
-      self.active.where(:name => name).first
+      self.active.where(:name => name).order_by(:created_at.desc).first
     end
 
 
@@ -72,11 +75,8 @@ class Chub
     # the options with :from_rev, or an actual AppConfig instance given
     # to the :from option.
     # Options supported are :from_rev, :from, 'timestamp' and 'user'.
-    #
-    # Warning: If an AppConfig instance is given to :from, it will be used
-    # in its in-memory state and saved to the store as such.
 
-    def self.create_rev name, options={}
+    def self.new_rev name, options={}
       options     = options.dup
       prev_config = options.delete :from
       from_rev    = options.delete :from_rev
@@ -95,33 +95,26 @@ class Chub
         self.new :name       => options['file'],
                  :created_at => options['timestamp'],
                  :updated_by => options['user'],
-                 :rev        => options['revision']
+                 :rev        => options['revision'],
+                 :active     => true
 
       if prev_config
         new_doc = prev_config.document.dup if prev_config.document
-
-        if prev_config.active?
-          prev_config.active = false
-          prev_config.save!
-        end
-
         app_config.previous = prev_config
         app_config.includes = prev_config.includes.dup
       end
 
       app_config.data = new_doc.data
-
-      app_config.save!
       app_config
     end
 
 
     ##
-    # Creates and saves a new revision as a child of this instance.
+    # Creates a new revision as a child of this instance in memory.
     # Options supported are 'timestamp' and 'user'.
 
-    def create_rev options={}
-      self.class.create_rev self.name, options.merge(:from => self)
+    def new_rev options={}
+      self.class.new_rev self.name, options.merge(:from => self)
     end
 
 
@@ -234,6 +227,34 @@ class Chub
           "#{line_num})",
           line
         ]
+      end
+    end
+
+
+    ##
+    # Ensures there is a unique active config per name.
+
+    def ensure_active
+      active_configs = self.class.active.where(:name => self.name).
+                        order_by(:created_at.desc)
+
+      if active_configs.empty?
+        if self.previous
+          self.previous.active = true
+          self.previous.save!
+        else
+          latest_config = self.class.latest self.name
+          return unless latest_config
+
+          latest_config.active = true
+          latest_config.save!
+        end
+
+      elsif active_configs.length > 1
+        active_configs[1..-1].each do |ac|
+          ac.active = false
+          ac.save!
+        end
       end
     end
 
