@@ -213,6 +213,18 @@ class Chub
 
 
     ##
+    # Sets data at the given String path. Accepts optional metadata as a Hash
+    # to merge. If path does not exist, forces the creation of the structure.
+    #   app_config.set_path! "path/to/prop", "value", "user" => "joe"
+
+    def set_path! path, val, meta={}
+      meta = self.curr_meta.merge meta
+      path = path.split("/").map{|p| p =~ /^\d+$/ ? p.to_i : p}
+      self.document.set_path! path, val, meta
+    end
+
+
+    ##
     # Returns a blamed string output.
     # Passing history an integer will limit the number of revisions.
 

@@ -305,12 +305,18 @@ class TestDocument < Test::Unit::TestCase
 
   def test_set_path_invalid
     assert_raises Chub::Document::InvalidPathError do
-      @meta.set_path [0,0,0], "OOPS"
+      @meta.set_path [:foo,0,0], "OOPS"
     end
 
     assert_raises TypeError do
       @meta.set_path [:arr, 'thing'], "OOPS"
     end
+  end
+
+
+  def test_set_path_recursive_new
+    @meta.set_path [:new,:path,0,2], "NEW PATH"
+    assert_equal({:path => [[nil,nil,"NEW PATH"]]}, @meta[:new].value)
   end
 
 

@@ -175,12 +175,14 @@ class Chub
     def set_path path, val, meta=nil
       prev_key  = nil
 
-      set_path! path, val, meta do |curr_data, pk|
-        prev_key = pk
+      set_path! path, val, meta do |curr_data, k, meta|
+        prev_key = k
 
-        raise InvalidPathError,
-          "No such path #{path.inspect} at '#{prev_key}'" unless curr_data &&
-            (Hash === curr_data[0] || Array === curr_data[0])
+        if curr_data[0] && !(Hash === curr_data[0] || Array === curr_data[0])
+          raise InvalidPathError,
+            "Bad path #{path.inspect} at '#{prev_key}' for " +
+              curr_data[0].class.to_s
+        end
       end
 
     rescue TypeError => e
@@ -216,21 +218,24 @@ class Chub
       prev_data = nil
       prev_key  = nil
 
-      path.each do |k|
+      path.each_with_index do |k, i|
         if block_given?
-          yield curr_data, prev_key
+          yield curr_data, prev_key, meta
 
         else
           if Array === curr_data[0] && !(Integer === k)
             curr_data[0] = curr_data[0].to_hash
-
-          elsif !(Hash === curr_data[0]) && !(Array === curr_data[0])
-            curr_data[0] = Integer === k ? Array.new(k, [nil, meta]) : Hash.new
           end
+        end
+
+        if !(Hash === curr_data[0]) && !(Array === curr_data[0])
+          curr_data[0] = Integer === k ? Array.new(k, [nil, meta]) : Hash.new
         end
 
         prev_data = curr_data
         prev_key  = k
+
+        curr_data[0][k] ||= [nil, meta] if path.length > i+1
         curr_data = curr_data[0][k]
       end
 
