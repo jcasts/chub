@@ -225,8 +225,16 @@ class Chub
 
 
     ##
+    # Removes the specified path and deletes nil or empty data.
+
+    def delete_path path, val
+      path = path.split("/").map{|p| p =~ /^\d+$/ ? p.to_i : p}
+      self.document.delete_path path, val, meta
+    end
+
+
+    ##
     # Returns a blamed string output.
-    # Passing history an integer will limit the number of revisions.
 
     def blame
       "[#{self.name} #{self.rev.split("-").first}]\n\n" +
