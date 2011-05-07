@@ -381,6 +381,29 @@ class TestDocument < Test::Unit::TestCase
   end
 
 
+  def test_delete_path
+    @meta.delete_path [:hsh, :sub, 'b', 0]
+    assert_equal 'thing', @meta[:hsh][:sub]['b'][0].value
+  end
+
+
+  def test_delete_path_all_array
+    @meta.delete_path [:hsh, :sub, 'b', 0]
+    @meta.delete_path [:hsh, :sub, 'b', 0]
+
+    assert_nil @meta[:hsh][:sub]['b']
+    assert_equal({'a' => 1}, @meta[:hsh][:sub].value)
+  end
+
+
+  def test_delete_path_all_hash
+    @meta.delete_path [:hsh, :sub]
+
+    assert_nil @meta[:hsh]
+    assert_equal({:foo => 'bar',:arr => %w{a b c}}, @meta.value)
+  end
+
+
   def test_append_row
     arr = [1,2,3]
     @meta.append_row arr, "test", 1 do |meta, line_num, str|

@@ -184,11 +184,6 @@ class Chub
               curr_data[0].class.to_s
         end
       end
-
-    rescue TypeError => e
-      raise unless e.message =~ /can't convert String into Integer/
-      raise TypeError,
-        "Expected Integer in path #{path.inspect} at #{prev_key.inspect}"
     end
 
 
@@ -214,11 +209,10 @@ class Chub
 
     def set_path! path, val, meta=nil
       meta    ||= @data[1]
-      curr_data = @data
       prev_data = nil
       prev_key  = nil
 
-      path.each_with_index do |k, i|
+      iterate_path path do |curr_data, k, i|
         if block_given?
           yield curr_data, prev_key, meta
 
@@ -236,7 +230,6 @@ class Chub
         prev_key  = k
 
         curr_data[0][k] ||= [nil, meta] if path.length > i+1
-        curr_data = curr_data[0][k]
       end
 
       if self.class === val && meta.nil?
@@ -247,6 +240,60 @@ class Chub
       end
 
       prev_data[0][prev_key] = val
+    end
+
+
+    ##
+    # Deletes the datapoint specified by the given path.
+    # Cleans up and removes all empty data points in the given path.
+
+    def delete_path path, meta=nil
+      all_datas = []
+
+      iterate_path path do |curr_data, k, i|
+        all_datas.unshift curr_data[0]
+      end
+
+      prev_data = nil
+
+      path.reverse.each_with_index do |k, i|
+        curr_data = all_datas[i]
+
+        if !prev_data || prev_data.empty?
+          curr_data.delete_at(k) if Array === curr_data
+          curr_data.delete(k)    if Hash === curr_data
+        end
+
+        prev_data = curr_data
+      end
+    end
+
+
+    ##
+    # Iterate through each data point for a given path array.
+
+    def iterate_path path
+      curr_data = @data
+      prev_key  = nil
+
+      path.each_with_index do |k, i|
+        prev_key = k
+
+        yield curr_data, k, i if block_given?
+
+        if curr_data[0] && !(Hash === curr_data[0] || Array === curr_data[0])
+          raise InvalidPathError,
+            "Bad path #{path.inspect} at '#{k}' for " +
+              curr_data[0].class.to_s
+        end
+
+        curr_data = curr_data[0][k]
+      end
+
+    rescue TypeError => e
+      raise unless e.message =~ /can't convert String into Integer/
+      raise TypeError,
+        "Expected Integer in path #{path.inspect} at #{prev_key.inspect}"
     end
 
 

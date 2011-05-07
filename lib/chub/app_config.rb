@@ -229,7 +229,7 @@ class Chub
 
     def delete_path path, val
       path = path.split("/").map{|p| p =~ /^\d+$/ ? p.to_i : p}
-      self.document.delete_path path, val, meta
+      self.document.delete_path path, meta
     end
 
 
