@@ -160,7 +160,7 @@ class TestDocument < Test::Unit::TestCase
     new_meta = @meta[:arr].merge meta1
     assert_not_equal @meta[:arr].value, new_meta.value
 
-    assert_equal({0 => 'a', 1 => 'b', 2 => 'c', :one => "a", :two => "b"},
+    assert_equal({'0' => 'a', '1' => 'b', '2' => 'c', :one => "a", :two => "b"},
                   new_meta.value)
 
     assert_equal "bob", new_meta.metadata[:user]
@@ -180,7 +180,7 @@ class TestDocument < Test::Unit::TestCase
 
     @meta[:hsh].merge! meta1
 
-    assert_equal({0 => :one, 1 => :two, :sub => @meta[:hsh][:sub].value},
+    assert_equal({'0' => :one, '1' => :two, :sub => @meta[:hsh][:sub].value},
                   @meta[:hsh].value)
 
     assert_equal "bob", @meta[:hsh].metadata[:user]

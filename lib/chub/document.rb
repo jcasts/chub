@@ -387,6 +387,8 @@ class Chub
       when Hash
         data_value = {}
         @data[0].each do |key, val|
+          key = key.to_s unless Symbol === key || String === key
+
           child = self.class.new_from val
           data_value[key] = child.value
         end
